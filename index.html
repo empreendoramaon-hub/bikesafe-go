@@ -461,8 +461,6 @@
       toast('Voce saiu da conta');
       openAuth();
     };
-    function openAuth() { openOverlay('authOverlay'); }
-    function requireAuth() { if (!currentUser) { openAuth(); return false; } return true; }
     /* ---------- INIT ---------- */
     let deferredInstallPrompt = null;
     window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredInstallPrompt = e; const t = document.getElementById('modeTag'); });
