@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>BikeSafe Go</title>
+  <meta name="theme-color" content="#050505" />
+  <meta name="description" content="BikeSafe Go: proteja sua bike com mapa vivo, QR Code, alerta de furto e comunidade em tempo real." />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --black: #050505;
+      --black-2: #0d0d0d;
+      --surface: #141414;
+      --surface-2: #1f1f1f;
+      --surface-3: #2a2a2a;
+      --text: #f7f7f2;
+      --muted: #9b9b9b;
+      --muted-2: #6f6f6f;
+      --green: #00d084;
+      --green-2: #03f59f;
+      --red: #ff3b30;
+      --yellow: #ffd166;
+      --blue: #4a90e2;
+      --border: rgba(255,255,255,.10);
+      --shadow: 0 20px 60px rgba(0,0,0,.50);
+      --radius-lg: 28px;
+      --radius-md: 18px;
+      --radius-sm: 12px;
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+    body { min-height: 100vh; background: #000; font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, Arial, sans-serif; color: var(--text); overflow: hidden; }
+    button, input, select, textarea { font: inherit; }
+    button { -webkit-tap-highlight-color: transparent; }
+    .app { position: relative; width: 100%; max-width: 520px; min-height: 100vh; margin: 0 auto; background: var(--black); overflow: hidden; box-shadow: 0 0 0 1px rgba(255,255,255,.06); }
+    #map { position: absolute; inset: 0; background: radial-gradient(circle at 50% 35%, #232323, #080808 70%); z-index: 1; }
+    .leaflet-container { background: #111 !important; font-family: inherit; }
+    .leaflet-tile { filter: grayscale(1) invert(1) contrast(.9) brightness(.72); }
+    .leaflet-control-zoom, .leaflet-control-attribution { display: none !important; }
+    .leaflet-popup-content-wrapper { background: #101010 !important; color: var(--text) !important; border-radius: 18px !important; border: 1px solid var(--border); box-shadow: 0 18px 40px rgba(0,0,0,.45) !important; }
+    .leaflet-popup-tip { background: #101010 !important; }
+    .leaflet-popup-close-button { color: #fff !important; }
+    .pin { width: 42px; height: 42px; border-radius: 50% 50% 50% 8px; transform: rotate(-45deg); display: grid; place-items: center; border: 3px solid rgba(255,255,255,.78); box-shadow: 0 12px 28px rgba(0,0,0,.45); }
+    .pin span { transform: rotate(45deg); font-size: 18px; }
+    .pin.safe { background: var(--green); }
+    .pin.stolen { background: var(--red); animation: pinPulse 1.8s infinite; }
+    .pin.shop { background: #f4f4f4; color: #111; }
+    .pin.user { background: var(--blue); width: 24px; height: 24px; border-radius: 50%; transform: none; }
+    @keyframes pinPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(255,59,48,.38), 0 12px 28px rgba(0,0,0,.45); } 50% { box-shadow: 0 0 0 16px rgba(255,59,48,0), 0 12px 28px rgba(0,0,0,.45); } }
+    .map-fallback { position: absolute; inset: 0; display: none; background: linear-gradient(90deg, rgba(255,255,255,.04) 1px, transparent 1px) 0 0/44px 44px, linear-gradient(rgba(255,255,255,.04) 1px, transparent 1px) 0 0/44px 44px, radial-gradient(circle at 30% 22%, rgba(0,208,132,.20), transparent 28%), radial-gradient(circle at 70% 58%, rgba(255,59,48,.16), transparent 24%), #0a0a0a; z-index: 2; }
+    .map-fallback.active { display: block; }
+    .fake-road { position: absolute; height: 52px; width: 130%; left: -15%; background: rgba(255,255,255,.06); border-top: 1px solid rgba(255,255,255,.06); border-bottom: 1px solid rgba(255,255,255,.06); transform: rotate(-18deg); }
+    .fake-road:nth-child(1) { top: 22%; }
+    .fake-road:nth-child(2) { top: 56%; transform: rotate(22deg); }
+    .fake-road:nth-child(3) { top: 72%; transform: rotate(-5deg); }
+    .top-layer { position: absolute; top: calc(14px + env(safe-area-inset-top, 0px)); left: 14px; right: 14px; z-index: 10; pointer-events: none; }
+    .search-row { display: flex; gap: 10px; align-items: center; pointer-events: auto; }
+    .search-box { flex: 1; min-height: 52px; display: flex; align-items: center; gap: 10px; padding: 0 16px; border-radius: 999px; background: rgba(5,5,5,.82); backdrop-filter: blur(18px); border: 1px solid rgba(255,255,255,.14); box-shadow: var(--shadow); }
+    .search-box input { width: 100%; border: 0; outline: 0; background: transparent; color: var(--text); font-size: 14px; }
+    .search-box input::placeholder { color: #b7b7b7; }
+    .round-btn { width: 52px; height: 52px; border-radius: 50%; border: 1px solid rgba(255,255,255,.14); background: rgba(5,5,5,.86); color: var(--text); display: grid; place-items: center; box-shadow: var(--shadow); cursor: pointer; backdrop-filter: blur(18px); }
+    .round-btn:active { transform: scale(.97); }
+    .brand-chip { display: inline-flex; align-items: center; gap: 8px; margin-top: 12px; padding: 8px 12px; border-radius: 999px; background: rgba(0,0,0,.68); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,.12); font-weight: 900; letter-spacing: -.4px; pointer-events: auto; }
+    .brand-chip span { color: var(--green); }
+    .map-actions { position: absolute; right: 14px; top: 142px; z-index: 10; display: grid; gap: 10px; }
+    .float-action { width: 48px; height: 48px; border-radius: 50%; border: 1px solid rgba(255,255,255,.13); background: rgba(10,10,10,.86); color: var(--text); box-shadow: var(--shadow); cursor: pointer; backdrop-filter: blur(18px); display: grid; place-items: center; font-size: 18px; }
+    .status-strip { position: absolute; left: 14px; right: 14px; top: calc(102px + env(safe-area-inset-top, 0px)); z-index: 9; display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
+    .status-strip::-webkit-scrollbar { display: none; }
+    .status-pill { flex: 0 0 auto; border: 1px solid rgba(255,255,255,.13); background: rgba(0,0,0,.72); color: var(--text); border-radius: 999px; padding: 8px 12px; display: flex; gap: 7px; align-items: center; font-size: 12px; font-weight: 800; backdrop-filter: blur(14px); }
+    .status-pill strong { color: var(--green); }
+    .status-pill.red strong { color: var(--red); }
+    .sheet { position: absolute; z-index: 20; left: 0; right: 0; bottom: 0; height: 76vh; transform: translateY(calc(76vh - 286px - var(--safe-bottom))); border-radius: 30px 30px 0 0; background: rgba(7,7,7,.94); border: 1px solid rgba(255,255,255,.13); border-bottom: 0; box-shadow: 0 -24px 60px rgba(0,0,0,.62); backdrop-filter: blur(24px); transition: transform .34s cubic-bezier(.2,.9,.2,1); display: flex; flex-direction: column; overflow: hidden; }
+    .sheet.expanded { transform: translateY(0); }
+    .sheet-grabber { width: 52px; height: 5px; border-radius: 999px; background: rgba(255,255,255,.28); margin: 12px auto 8px; flex: 0 0 auto; }
+    .sheet-head { padding: 0 18px 12px; flex: 0 0 auto; }
+    .sheet-title-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+    .sheet-title h1 { font-size: 24px; letter-spacing: -.7px; line-height: 1; }
+    .sheet-title p { color: var(--muted); font-size: 13px; margin-top: 5px; }
+    .mini-metric { text-align: right; color: var(--muted); font-size: 11px; line-height: 1.15; }
+    .mini-metric b { display: block; color: var(--green); font-size: 24px; line-height: 1; }
+    .hero-card { background: linear-gradient(140deg, rgba(255,255,255,.09), rgba(255,255,255,.035)), var(--surface); border: 1px solid rgba(255,255,255,.12); border-radius: var(--radius-lg); padding: 16px; display: grid; grid-template-columns: 66px 1fr; gap: 14px; align-items: center; margin-bottom: 12px; cursor: pointer; }
+    .bike-photo { width: 66px; height: 66px; border-radius: 22px; background: linear-gradient(145deg, #222, #111); display: grid; place-items: center; font-size: 30px; overflow: hidden; border: 1px solid rgba(255,255,255,.10); }
+    .bike-photo img { width: 100%; height: 100%; object-fit: cover; }
+    .bike-main h2 { font-size: 17px; line-height: 1.15; letter-spacing: -.3px; margin-bottom: 4px; }
+    .bike-main p { font-size: 13px; color: var(--muted); }
+    .bike-status-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 9px; }
+    .badge { border-radius: 999px; padding: 6px 10px; font-size: 11px; font-weight: 900; letter-spacing: .2px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+    .badge.safe { color: #06140f; background: var(--green); }
+    .badge.stolen { color: #fff; background: var(--red); }
+    .badge.dark { color: var(--text); background: rgba(255,255,255,.10); }
+    .ghost-link { background: transparent; border: 0; color: var(--green); font-weight: 800; cursor: pointer; font-size: 12px; }
+    .quick-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .action-btn { min-height: 54px; border: 0; border-radius: 18px; cursor: pointer; font-weight: 900; letter-spacing: -.2px; display: flex; align-items: center; justify-content: center; gap: 8px; transition: transform .18s, opacity .18s; }
+    .action-btn:active { transform: scale(.985); }
+    .action-btn.primary { background: var(--green); color: #05110c; }
+    .action-btn.secondary { background: rgba(255,255,255,.10); color: var(--text); border: 1px solid rgba(255,255,255,.10); }
+    .action-btn.danger { grid-column: 1 / -1; background: var(--red); color: white; box-shadow: 0 14px 38px rgba(255,59,48,.25); }
+    .sheet-body { padding: 4px 18px calc(26px + var(--safe-bottom)); overflow-y: auto; flex: 1; }
+    .section-label { color: var(--muted); font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: .8px; margin: 18px 0 10px; }
+    .bike-list { display: grid; gap: 10px; }
+    .list-card { display: grid; grid-template-columns: 52px 1fr auto; align-items: center; gap: 12px; padding: 12px; background: rgba(255,255,255,.065); border: 1px solid rgba(255,255,255,.09); border-radius: 20px; cursor: pointer; }
+    .list-card.stolen { background: rgba(255,59,48,.13); border-color: rgba(255,59,48,.28); }
+    .list-thumb { width: 52px; height: 52px; border-radius: 18px; display: grid; place-items: center; background: #202020; overflow: hidden; font-size: 24px; }
+    .list-thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .list-card h3 { font-size: 14px; margin-bottom: 3px; }
+    .list-card p { color: var(--muted); font-size: 12px; }
+    .chev { color: var(--muted-2); font-size: 20px; }
+    .feed-card { padding: 14px; border-radius: 20px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.09); margin-bottom: 10px; display: grid; gap: 6px; }
+    .feed-card h3 { font-size: 14px; }
+    .feed-card p { color: var(--muted); font-size: 12px; line-height: 1.45; }
+    .overlay { position: absolute; inset: 0; z-index: 50; display: none; align-items: flex-end; background: rgba(0,0,0,.58); backdrop-filter: blur(6px); }
+    .overlay.open { display: flex; }
+    .modal { width: 100%; max-height: 88vh; overflow-y: auto; border-radius: 30px 30px 0 0; background: #080808; border: 1px solid rgba(255,255,255,.12); border-bottom: 0; box-shadow: 0 -20px 60px rgba(0,0,0,.75); padding: 14px 18px calc(28px + var(--safe-bottom)); animation: slideUp .25s ease-out; }
+    @keyframes slideUp { from { transform: translateY(30px); opacity: .5; } to { transform: translateY(0); opacity: 1; } }
+    .modal-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 8px 0 16px; }
+    .modal-head h2 { font-size: 22px; letter-spacing: -.6px; }
+    .close-btn { width: 40px; height: 40px; border-radius: 50%; border: 0; background: rgba(255,255,255,.10); color: #fff; cursor: pointer; }
+    .form-grid { display: grid; gap: 13px; }
+    .field label { display: block; font-size: 11px; color: var(--muted); font-weight: 900; text-transform: uppercase; letter-spacing: .8px; margin-bottom: 7px; }
+    .field input, .field select, .field textarea { width: 100%; min-height: 52px; padding: 14px; border-radius: 17px; border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.07); color: var(--text); outline: 0; }
+    .field select option { color: #111; }
+    .field textarea { min-height: 88px; resize: vertical; }
+    .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--green); }
+    .upload-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; }
+    .upload-slot { position: relative; aspect-ratio: 1; border-radius: 18px; border: 1.5px dashed rgba(255,255,255,.18); background: rgba(255,255,255,.06); display: grid; place-items: center; text-align: center; color: var(--muted); cursor: pointer; overflow: hidden; font-size: 12px; padding: 8px; }
+    .upload-slot input { display: none; }
+    .upload-slot img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+    .submit-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 18px; }
+    .submit-row.single { grid-template-columns: 1fr; }
+    .info-stack { display: grid; gap: 10px; }
+    .info-row { display: flex; justify-content: space-between; gap: 14px; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,.08); font-size: 14px; }
+    .info-row span:first-child { color: var(--muted); }
+    .info-row span:last-child { text-align: right; font-weight: 800; max-width: 62%; word-break: break-word; }
+    .qr-box { display: grid; place-items: center; background: #fff; border-radius: 24px; padding: 18px; margin: 14px auto; width: min(230px, 100%); min-height: 230px; }
+    .qr-box small { color: #111; text-align: center; word-break: break-all; }
+    .hunt-panel { border-radius: 24px; background: linear-gradient(145deg, rgba(255,59,48,.22), rgba(255,59,48,.06)); border: 1px solid rgba(255,59,48,.28); padding: 18px; margin-bottom: 14px; }
+    .hunt-panel h3 { font-size: 20px; margin-bottom: 6px; }
+    .hunt-panel p { color: #ffd1ce; font-size: 13px; line-height: 1.45; }
+    .toast { position: absolute; left: 50%; bottom: calc(300px + var(--safe-bottom)); transform: translateX(-50%) translateY(20px); z-index: 90; opacity: 0; pointer-events: none; background: #f4f4f4; color: #050505; border-radius: 999px; padding: 12px 16px; font-size: 13px; font-weight: 900; box-shadow: var(--shadow); transition: opacity .22s, transform .22s; white-space: nowrap; max-width: calc(100% - 28px); overflow: hidden; text-overflow: ellipsis; }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .toast.error { background: var(--red); color: #fff; }
+    .empty { border-radius: 22px; border: 1px dashed rgba(255,255,255,.16); padding: 24px; text-align: center; color: var(--muted); line-height: 1.45; font-size: 14px; }
+    .fab-plus { position: absolute; left: 50%; bottom: calc(258px + var(--safe-bottom)); transform: translateX(-50%); z-index: 21; width: 64px; height: 64px; border-radius: 50%; border: 5px solid rgba(7,7,7,.94); background: var(--green); color: #04120c; box-shadow: 0 14px 38px rgba(0,208,132,.26); font-size: 26px; font-weight: 900; cursor: pointer; transition: bottom .34s cubic-bezier(.2,.9,.2,1), transform .18s; }
+    .sheet.expanded + .fab-plus { bottom: calc(76vh - 32px + var(--safe-bottom)); }
+    .fab-plus:active { transform: translateX(-50%) scale(.96); }
+    @media (min-width: 700px) {
+      body { background: radial-gradient(circle at 50% 0%, #202020, #000 58%); }
+      .app { min-height: min(920px, 100vh); border-radius: 34px; overflow: hidden; margin-top: 0; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app" id="app">
+    <div id="map"></div>
+    <div class="map-fallback" id="mapFallback" aria-hidden="true">
+      <div class="fake-road"></div>
+      <div class="fake-road"></div>
+      <div class="fake-road"></div>
+    </div>
+    <section class="top-layer">
+      <div class="search-row">
+        <label class="search-box" aria-label="Buscar">
+          <span>&#128269;</span>
+          <input id="searchInput" type="search" placeholder="Buscar bike, QR Code, serie ou area" />
+        </label>
+        <button class="round-btn" onclick="openProfile()" title="Perfil">&#128100;</button>
+      </div>
+      <button class="brand-chip" onclick="toggleSheet(true)">Bike<span>Safe</span> Go</button>
+    </section>
+    <div class="status-strip" id="statusStrip"></div>
+    <div class="map-actions">
+      <button class="float-action" onclick="centerUser()" title="Minha localizacao">&#128205;</button>
+      <button class="float-action" onclick="toggleThemeMap()" title="Trocar estilo do mapa">&#127761;</button>
+      <button class="float-action" onclick="openHuntCenter()" title="Alertas">&#128680;</button>
+    </div>
+    <section class="sheet" id="sheet">
+      <button class="sheet-grabber" aria-label="Expandir painel" onclick="toggleSheet()"></button>
+      <div class="sheet-head">
+        <div class="sheet-title-row">
+          <div class="sheet-title">
+            <h1>Sua garagem viva</h1>
+            <p id="summaryText">Carregando protecao...</p>
+          </div>
+          <div class="mini-metric">
+            <b id="safeCount">0</b>
+            protegidas
+          </div>
+        </div>
+        <div class="hero-card" id="mainBikeCard" onclick="openSelectedBike()"></div>
+        <div class="quick-actions">
+          <button class="action-btn primary" onclick="openRegister()">&#10133; Cadastrar</button>
+          <button class="action-btn secondary" onclick="openSelectedQR()">&#9635; Ver QR</button>
+          <button class="action-btn danger" onclick="panicSelectedBike()">&#128680; Minha bike sumiu</button>
+        </div>
+      </div>
+      <div class="sheet-body">
+        <div class="section-label">Minhas bikes</div>
+        <div class="bike-list" id="bikeList"></div>
+        <div class="section-label">Comunidade perto de voce</div>
+        <div id="communityFeed"></div>
+      </div>
+    </section>
+    <button class="fab-plus" onclick="openRegister()" title="Cadastrar bike">+</button>
+    <div class="overlay" id="registerOverlay">
+      <div class="modal">
+        <div class="sheet-grabber"></div>
+        <div class="modal-head">
+          <h2>Nova bike</h2>
+          <button class="close-btn" onclick="closeOverlay('registerOverlay')">&#10005;</button>
+        </div>
+        <form class="form-grid" id="bikeForm" onsubmit="saveBike(event)">
+          <div class="field">
+            <label>Fotos da bike</label>
+            <div class="upload-row">
+              <label class="upload-slot" id="slot0">&#128247;<br>Principal<input type="file" accept="image/*" onchange="previewPhoto(event, 0)"></label>
+              <label class="upload-slot" id="slot1">&#128690;<br>Lateral<input type="file" accept="image/*" onchange="previewPhoto(event, 1)"></label>
+              <label class="upload-slot" id="slot2">&#128269;<br>Detalhe<input type="file" accept="image/*" onchange="previewPhoto(event, 2)"></label>
+            </div>
+          </div>
+          <div class="field">
+            <label>Marca</label>
+            <select id="brand" required>
+              <option value="">Selecione</option>
+              <option>Trek</option><option>Specialized</option><option>Giant</option><option>Caloi</option><option>Oggi</option><option>Sense</option><option>Cannondale</option><option>Scott</option><option>Outra</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Modelo</label>
+            <input id="model" required placeholder="Ex: Marlin 7, Allez Sport..." />
+          </div>
+          <div class="field">
+            <label>Cor principal</label>
+            <select id="color" required>
+              <option value="">Selecione</option>
+              <option>Preto</option><option>Branco</option><option>Azul</option><option>Vermelho</option><option>Verde</option><option>Cinza</option><option>Amarelo</option><option>Laranja</option><option>Rosa</option><option>Outra</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Numero de serie do quadro</label>
+            <input id="serial" placeholder="Geralmente embaixo do pedivela" />
+          </div>
+          <div class="field">
+            <label>Chave da NF-e ou link do comprovante</label>
+            <input id="invoice" placeholder="Cole aqui a chave, link, ou observacao da nota" />
+          </div>
+          <div class="field">
+            <label>Rastreador GPS opcional</label>
+            <input id="tracker" type="url" placeholder="https://find.apple.com/..." />
+          </div>
+          <div class="field">
+            <label>Detalhes que ajudam a identificar</label>
+            <textarea id="notes" placeholder="Adesivos, arranhoes, pecas trocadas, selim, guidao..."></textarea>
+          </div>
+          <div class="submit-row">
+            <button type="button" class="action-btn secondary" onclick="closeOverlay('registerOverlay')">Cancelar</button>
+            <button type="submit" class="action-btn primary">Salvar bike</button>
+          </div>
+        </form>
+      </div>
+    </div>
+    <div class="overlay" id="detailOverlay">
+      <div class="modal">
+        <div class="sheet-grabber"></div>
+        <div class="modal-head">
+          <h2 id="detailTitle">Detalhes</h2>
+          <button class="close-btn" onclick="closeOverlay('detailOverlay')">&#10005;</button>
+        </div>
+        <div id="detailContent"></div>
+      </div>
+    </div>
+    <div class="overlay" id="alertOverlay">
+      <div class="modal">
+        <div class="sheet-grabber"></div>
+        <div class="modal-head">
+          <h2>Modo Caca</h2>
+          <button class="close-btn" onclick="closeOverlay('alertOverlay')">&#10005;</button>
+        </div>
+        <div id="alertContent"></div>
+      </div>
+    </div>
+    <div class="overlay" id="profileOverlay">
+      <div class="modal">
+        <div class="sheet-grabber"></div>
+        <div class="modal-head">
+          <h2>Perfil &amp; seguranca</h2>
+          <button class="close-btn" onclick="closeOverlay('profileOverlay')">&#10005;</button>
+        </div>
+        <div class="feed-card">
+          <h3>&#128100; Ciclista Demo</h3>
+          <p>Conta em modo demonstracao. Para producao, conecte Firebase/Auth, banco de dados e armazenamento de fotos.</p>
+        </div>
+        <div class="feed-card">
+          <h3>&#128737; Proximo upgrade recomendado</h3>
+          <p>Verificacao por CPF/CNPJ, bicicletarias parceiras, API real de NF-e, push notification e painel administrativo.</p>
+        </div>
+        <div class="submit-row single">
+          <button class="action-btn secondary" onclick="resetDemo()">Restaurar dados demo</button>
+        </div>
+      </div>
+    </div>
+    <div class="toast" id="toast"></div>
+  </main>
+  <script>
+    const STORAGE_KEY = 'bikesafe-go-state-v1';
+    let state = {
+      selectedBikeId: null,
+      darkMap: true,
+      photosDraft: ['', '', ''],
+      bikes: [
+        {
+          id: cryptoId(),
+          brand: 'Trek',
+          model: 'Marlin 7',
+          color: 'Azul',
+          serial: 'WTU123456',
+          invoice: 'NF-e anexada: chave demo 3525...',
+          tracker: '',
+          notes: 'Adesivo de caveira no guidao e manopla azul.',
+          status: 'safe',
+          createdAt: new Date().toISOString(),
+          lat: -27.5954,
+          lng: -48.5480,
+          photos: []
+        },
+        {
+          id: cryptoId(),
+          brand: 'Caloi',
+          model: 'Explorer Sport',
+          color: 'Vermelho',
+          serial: 'CLO789012',
+          invoice: '',
+          tracker: 'https://www.apple.com/find-my/',
+          notes: 'Suspensao dianteira com arranhao branco.',
+          status: 'stolen',
+          stolenAt: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
+          createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString(),
+          lat: -27.5812,
+          lng: -48.5580,
+          photos: []
+        }
+      ],
+      sightings: [
+        { text: 'Bike vermelha vista perto da Trindade.', time: 'ha 25 min', type: 'alert' },
+        { text: 'Bike Center Floripa entrou como parceira verificada.', time: 'hoje', type: 'shop' },
+        { text: '3 bikes novas cadastradas na regiao central.', time: 'ontem', type: 'safe' }
+      ]
+    };
+    let map = null;
+    let markersLayer = null;
+    let userMarker = null;
+    let userCoords = null;
+    const shops = [
+      { name: 'Bike Center Floripa', lat: -27.5954, lng: -48.5480, address: 'Centro, Florianopolis' },
+      { name: 'FixBike Shop', lat: -27.5900, lng: -48.5700, address: 'Trindade, Florianopolis' },
+      { name: 'Pedal Norte', lat: -27.5750, lng: -48.5020, address: 'Norte da Ilha' }
+    ];
+    function cryptoId() {
+      if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+      return 'bike-' + Math.random().toString(36).slice(2) + Date.now();
+    }
+    function loadState() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) state = JSON.parse(saved);
+      } catch (e) {
+        console.warn('Nao foi possivel carregar localStorage', e);
+      }
+      if (!state.selectedBikeId && state.bikes.length) state.selectedBikeId = state.bikes[0].id;
+    }
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+    function resetDemo() {
+      localStorage.removeItem(STORAGE_KEY);
+      location.reload();
+    }
+    function init() {
+      loadState();
+      initMap();
+      render();
+      bindSearch();
+      setTimeout(() => toggleSheet(false), 100);
+    }
+    function initMap() {
+      const fallback = document.getElementById('mapFallback');
+      if (!window.L) {
+        fallback.classList.add('active');
+        return;
+      }
+      map = L.map('map', {
+        zoomControl: false,
+        attributionControl: false,
+        dragging: true,
+        tap: true,
+        center: [-27.5954, -48.5480],
+        zoom: 13
+      });
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19
+      }).addTo(map);
+      markersLayer = L.layerGroup().addTo(map);
+      renderMarkers();
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(position => {
+          userCoords = [position.coords.latitude, position.coords.longitude];
+          addUserMarker(userCoords);
+          map.setView(userCoords, 14);
+        }, () => null, { enableHighAccuracy: true, timeout: 5000 });
+      }
+    }
+    function iconFor(type) {
+      const className = type === 'stolen' ? 'stolen' : type === 'shop' ? 'shop' : type === 'user' ? 'user' : 'safe';
+      const emoji = type === 'stolen' ? '\uD83D\uDEB2' : type === 'shop' ? '\uD83C\uDFEA' : type === 'user' ? '' : '\uD83D\uDEB2';
+      return L.divIcon({
+        html: `<div class="pin ` + className + `"><span>` + emoji + `</span></div>`,
+        className: '',
+        iconSize: type === 'user' ? [24,24] : [42,42],
+        iconAnchor: type === 'user' ? [12,12] : [21,42],
+        popupAnchor: [0,-34]
+      });
+    }
+    function renderMarkers() {
+      if (!map || !markersLayer) return;
+      markersLayer.clearLayers();
+      state.bikes.forEach(bike => {
+        const lat = bike.lat || -27.5954 + (Math.random() - .5) * .04;
+        const lng = bike.lng || -48.5480 + (Math.random() - .5) * .04;
+        const type = bike.status === 'stolen' ? 'stolen' : 'safe';
+        const popup = `
+          <strong>` + bike.brand + ` ` + bike.model + `</strong><br>
+          <span style="color:#aaa">` + bike.color + ` \u2022 ` + (bike.status === 'stolen' ? 'Alerta ativo' : 'Segura') + `</span><br>
+          <button onclick="openBikeDetail('` + bike.id + `')" style="margin-top:8px;border:0;border-radius:999px;padding:7px 10px;background:` + (bike.status === 'stolen' ? '#ff3b30' : '#00d084') + `;font-weight:900;color:` + (bike.status === 'stolen' ? '#fff' : '#05110c') + `">Ver bike</button>
+        `;
+        L.marker([lat, lng], { icon: iconFor(type) }).bindPopup(popup).addTo(markersLayer);
+      });
+      shops.forEach(shop => {
+        L.marker([shop.lat, shop.lng], { icon: iconFor('shop') })
+          .bindPopup(`<strong>` + shop.name + `</strong><br><span style="color:#aaa">` + shop.address + `</span><br><span style="color:#00d084;font-weight:800">Parceira verificada</span>`)
+          .addTo(markersLayer);
+      });
+    }
+    function addUserMarker(coords) {
+      if (!map) return;
+      if (userMarker) userMarker.remove();
+      userMarker = L.marker(coords, { icon: iconFor('user') }).bindPopup('\uD83D\uDCCD Voce esta aqui').addTo(map);
+    }
+    function centerUser() {
+      if (userCoords && map) {
+        map.setView(userCoords, 15);
+        toast('Centralizado na sua localizacao');
+        return;
+      }
+      if (!navigator.geolocation) {
+        toast('Geolocalizacao nao suportada neste navegador', true);
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(position => {
+        userCoords = [position.coords.latitude, position.coords.longitude];
+        addUserMarker(userCoords);
+        map.setView(userCoords, 15);
+        toast('Localizacao encontrada');
+      }, () => toast('Permissao de localizacao negada', true));
+    }
+    function toggleThemeMap() {
+      state.darkMap = !state.darkMap;
+      document.querySelectorAll('.leaflet-tile').forEach(tile => {
+        tile.style.filter = state.darkMap ? 'grayscale(1) invert(1) contrast(.9) brightness(.72)' : 'grayscale(.15) contrast(1) brightness(1)';
+      });
+      saveState();
+    }
+    function render() {
+      const safe = state.bikes.filter(b => b.status !== 'stolen').length;
+      const stolen = state.bikes.filter(b => b.status === 'stolen').length;
+      const selected = getSelectedBike() || state.bikes[0];
+      if (selected) state.selectedBikeId = selected.id;
+      document.getElementById('safeCount').textContent = safe;
+      document.getElementById('summaryText').textContent = state.bikes.length + ' bike' + (state.bikes.length === 1 ? '' : 's') + ' cadastrada' + (state.bikes.length === 1 ? '' : 's') + ' \u2022 ' + stolen + ' alerta' + (stolen === 1 ? '' : 's') + ' ativo' + (stolen === 1 ? '' : 's');
+      renderStatusStrip(safe, stolen);
+      renderMainBike(selected);
+      renderBikeList();
+      renderCommunityFeed();
+      renderMarkers();
+      saveState();
+    }
+    function renderStatusStrip(safe, stolen) {
+      document.getElementById('statusStrip').innerHTML = `
+        <div class="status-pill"><span>\uD83D\uDEE1\uFE0F</span><strong>` + safe + `</strong> protegidas</div>
+        <div class="status-pill red"><span>\uD83D\uDEA8</span><strong>` + stolen + `</strong> alertas</div>
+        <div class="status-pill"><span>\uD83C\uDFEA</span><strong>` + shops.length + `</strong> parceiros</div>
+        <div class="status-pill"><span>\u25A3</span><strong>QR</strong> ativo</div>
+      `;
+    }
+    function renderMainBike(bike) {
+      const el = document.getElementById('mainBikeCard');
+      if (!bike) {
+        el.innerHTML = `
+          <div class="bike-photo">\uD83D\uDEB2</div>
+          <div class="bike-main">
+            <h2>Nenhuma bike cadastrada</h2>
+            <p>Comece criando o registro da sua primeira bike.</p>
+            <div class="bike-status-row"><span class="badge dark">Pronto para proteger</span></div>
+          </div>
+        `;
+        return;
+      }
+      el.innerHTML = `
+        <div class="bike-photo">` + photoHTML(bike, '\uD83D\uDEB2') + `</div>
+        <div class="bike-main">
+          <h2>` + escapeHTML(bike.brand) + ` ` + escapeHTML(bike.model) + `</h2>
+          <p>` + escapeHTML(bike.color) + ` \u2022 Serie: ` + escapeHTML(bike.serial || 'nao informada') + `</p>
+          <div class="bike-status-row">
+            <span class="badge ` + (bike.status === 'stolen' ? 'stolen' : 'safe') + `">` + (bike.status === 'stolen' ? '\uD83D\uDEA8 Em alerta' : '\u2705 Segura') + `</span>
+            <button class="ghost-link" onclick="event.stopPropagation(); openBikeDetail('` + bike.id + `')">Detalhes</button>
+          </div>
+        </div>
+      `;
+    }
+    function renderBikeList() {
+      const list = document.getElementById('bikeList');
+      if (!state.bikes.length) {
+        list.innerHTML = '<div class="empty">Nenhuma bike cadastrada ainda. Toque em \u201CCadastrar\u201D e crie seu primeiro escudo digital.</div>';
+        return;
+      }
+      list.innerHTML = state.bikes.map(bike => `
+        <article class="list-card ` + (bike.status === 'stolen' ? 'stolen' : '') + `" onclick="selectBike('` + bike.id + `')">
+          <div class="list-thumb">` + photoHTML(bike, '\uD83D\uDEB2') + `</div>
+          <div>
+            <h3>` + escapeHTML(bike.brand) + ` ` + escapeHTML(bike.model) + `</h3>
+            <p>` + escapeHTML(bike.color) + ` \u2022 ` + (bike.status === 'stolen' ? 'Alerta ativo' : 'Protegida') + `</p>
+          </div>
+          <div class="chev">\u203A</div>
+        </article>
+      `).join('');
+    }
+    function renderCommunityFeed() {
+      const feed = document.getElementById('communityFeed');
+      feed.innerHTML = state.sightings.map(item => `
+        <div class="feed-card">
+          <h3>` + (item.type === 'alert' ? '\uD83D\uDEA8' : item.type === 'shop' ? '\uD83C\uDFEA' : '\uD83D\uDEB2') + ` ` + escapeHTML(item.time) + `</h3>
+          <p>` + escapeHTML(item.text) + `</p>
+        </div>
+      `).join('');
+    }
+    function photoHTML(bike, fallback) {
+      if (bike.photos && bike.photos[0]) return '<img src="' + bike.photos[0] + '" alt="Bike cadastrada">';
+      return fallback;
+    }
+    function getSelectedBike() {
+      return state.bikes.find(b => b.id === state.selectedBikeId) || null;
+    }
+    function selectBike(id) {
+      state.selectedBikeId = id;
+      const bike = getSelectedBike();
+      renderMainBike(bike);
+      if (map && bike && bike.lat && bike.lng) map.setView([bike.lat, bike.lng], 15);
+      openBikeDetail(id);
+      saveState();
+    }
+    function openSelectedBike() {
+      const bike = getSelectedBike();
+      if (!bike) openRegister();
+      else openBikeDetail(bike.id);
+    }
+    function openSelectedQR() {
+      const bike = getSelectedBike();
+      if (!bike) return toast('Cadastre uma bike primeiro', true);
+      openBikeDetail(bike.id, true);
+    }
+    function panicSelectedBike() {
+      const bike = getSelectedBike();
+      if (!bike) return toast('Cadastre uma bike primeiro', true);
+      openAlertConfirm(bike.id);
+    }
+    function toggleSheet(force) {
+      const sheet = document.getElementById('sheet');
+      if (typeof force === 'boolean') sheet.classList.toggle('expanded', force);
+      else sheet.classList.toggle('expanded');
+      setTimeout(() => map && map.invalidateSize(), 340);
+    }
+    function openRegister() {
+      state.photosDraft = ['', '', ''];
+      document.getElementById('bikeForm').reset();
+      ['slot0','slot1','slot2'].forEach((id, i) => {
+        document.getElementById(id).innerHTML = (i === 0 ? '\uD83D\uDCF7<br>Principal' : i === 1 ? '\uD83D\uDEB2<br>Lateral' : '\uD83D\uDD0E<br>Detalhe') + '<input type="file" accept="image/*" onchange="previewPhoto(event, ' + i + ')">';
+      });
+      openOverlay('registerOverlay');
+    }
+    function previewPhoto(event, index) {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        state.photosDraft[index] = reader.result;
+        const slot = document.getElementById('slot' + index);
+        slot.innerHTML = '<img src="' + reader.result + '" alt="Previa"><input type="file" accept="image/*" onchange="previewPhoto(event, ' + index + ')">';
+      };
+      reader.readAsDataURL(file);
+    }
+    function saveBike(event) {
+      event.preventDefault();
+      const bike = {
+        id: cryptoId(),
+        brand: value('brand'),
+        model: value('model'),
+        color: value('color'),
+        serial: value('serial'),
+        invoice: value('invoice'),
+        tracker: value('tracker'),
+        notes: value('notes'),
+        status: 'safe',
+        createdAt: new Date().toISOString(),
+        lat: userCoords ? userCoords[0] : -27.5954 + (Math.random() - .5) * .05,
+        lng: userCoords ? userCoords[1] : -48.5480 + (Math.random() - .5) * .05,
+        photos: state.photosDraft.filter(Boolean)
+      };
+      state.bikes.unshift(bike);
+      state.selectedBikeId = bike.id;
+      closeOverlay('registerOverlay');
+      render();
+      toast('Bike cadastrada e QR pronto');
+    }
+    function openBikeDetail(id, scrollQR = false) {
+      const bike = state.bikes.find(b => b.id === id);
+      if (!bike) return;
+      state.selectedBikeId = id;
+      document.getElementById('detailTitle').textContent = bike.brand + ' ' + bike.model;
+      const publicUrl = location.origin + location.pathname + '?bike=' + encodeURIComponent(bike.id);
+      document.getElementById('detailContent').innerHTML = `
+        <div class="hero-card" style="cursor:default">
+          <div class="bike-photo">` + photoHTML(bike, '\uD83D\uDEB2') + `</div>
+          <div class="bike-main">
+            <h2>` + escapeHTML(bike.brand) + ` ` + escapeHTML(bike.model) + `</h2>
+            <p>` + escapeHTML(bike.color) + ` \u2022 ` + escapeHTML(bike.serial || 'serie nao informada') + `</p>
+            <div class="bike-status-row"><span class="badge ` + (bike.status === 'stolen' ? 'stolen' : 'safe') + `">` + (bike.status === 'stolen' ? '\uD83D\uDEA8 Alerta ativo' : '\u2705 Segura') + `</span></div>
+          </div>
+        </div>
+        <div class="info-stack">
+          ` + infoRow('Marca', bike.brand) + `
+          ` + infoRow('Modelo', bike.model) + `
+          ` + infoRow('Cor', bike.color) + `
+          ` + infoRow('No de serie', bike.serial || 'Nao informado') + `
+          ` + infoRow('NF-e / comprovante', bike.invoice || 'Nao anexado') + `
+          ` + infoRow('Rastreador', bike.tracker ? 'Configurado' : 'Nao configurado') + `
+          ` + infoRow('Observacoes', bike.notes || 'Sem observacoes') + `
+        </div>
+        <div class="section-label" id="qrAnchor">QR Code da bike</div>
+        <div class="qr-box" id="qrBox"></div>
+        <div class="submit-row">
+          <button class="action-btn secondary" onclick="copyText('` + publicUrl + `')">Copiar link</button>
+          <button class="action-btn primary" onclick="downloadQR()">Baixar QR</button>
+        </div>
+        <div class="submit-row ` + (bike.status === 'stolen' ? '' : 'single') + `">
+          ` + (bike.status === 'stolen' ? '<button class="action-btn primary" onclick="recoverBike(\'' + bike.id + '\')">\u2705 Recuperei</button>' : '') + `
+          <button class="action-btn danger" onclick="openAlertConfirm('` + bike.id + `')">\uD83D\uDEA8 Minha bike sumiu</button>
+        </div>
+      `;
+      openOverlay('detailOverlay');
+      setTimeout(() => renderQR(publicUrl), 20);
+      if (scrollQR) setTimeout(() => { const a = document.getElementById('qrAnchor'); if (a) a.scrollIntoView({ behavior: 'smooth' }); }, 90);
+      render();
+    }
+    function renderQR(text) {
+      const box = document.getElementById('qrBox');
+      if (!box) return;
+      box.innerHTML = '';
+      if (window.QRCode) {
+        new QRCode(box, {
+          text,
+          width: 194,
+          height: 194,
+          colorDark: '#050505',
+          colorLight: '#ffffff',
+          correctLevel: QRCode.CorrectLevel.H
+        });
+      } else {
+        box.innerHTML = '<small>' + escapeHTML(text) + '</small>';
+      }
+    }
+    function downloadQR() {
+      const box = document.getElementById('qrBox');
+      const canvas = box ? box.querySelector('canvas') : null;
+      const img = box ? box.querySelector('img') : null;
+      const link = document.createElement('a');
+      link.download = 'bikesafe-qr-code.png';
+      if (canvas) link.href = canvas.toDataURL('image/png');
+      else if (img) link.href = img.src;
+      else return toast('QR ainda nao foi gerado', true);
+      link.click();
+    }
+    function openAlertConfirm(id) {
+      const bike = state.bikes.find(b => b.id === id);
+      if (!bike) return;
+      document.getElementById('alertContent').innerHTML = `
+        <div class="hunt-panel">
+          <h3>\uD83D\uDEA8 Ativar alerta?</h3>
+          <p>O QR Code ficara marcado como furtado, o mapa sera atualizado e a comunidade vera a bike em modo de procura.</p>
+        </div>
+        <div class="hero-card" style="cursor:default">
+          <div class="bike-photo">` + photoHTML(bike, '\uD83D\uDEB2') + `</div>
+          <div class="bike-main">
+            <h2>` + escapeHTML(bike.brand) + ` ` + escapeHTML(bike.model) + `</h2>
+            <p>` + escapeHTML(bike.color) + ` \u2022 Serie: ` + escapeHTML(bike.serial || 'nao informada') + `</p>
+            <div class="bike-status-row"><span class="badge dark">Ultima localizacao sera registrada</span></div>
+          </div>
+        </div>
+        <div class="submit-row">
+          <button class="action-btn secondary" onclick="closeOverlay('alertOverlay')">Cancelar</button>
+          <button class="action-btn danger" onclick="confirmStolen('` + bike.id + `')">Confirmar furto</button>
+        </div>
+      `;
+      openOverlay('alertOverlay');
+    }
+    function confirmStolen(id) {
+      const bike = state.bikes.find(b => b.id === id);
+      if (!bike) return;
+      bike.status = 'stolen';
+      bike.stolenAt = new Date().toISOString();
+      if (userCoords) {
+        bike.lat = userCoords[0];
+        bike.lng = userCoords[1];
+      }
+      state.selectedBikeId = id;
+      state.sightings.unshift({ text: bike.brand + ' ' + bike.model + ' marcada como furtada. Comunidade em alerta.', time: 'agora', type: 'alert' });
+      render();
+      renderHuntCenter(id);
+      toast('Alerta ativado. Modo Caca ligado.');
+    }
+    function openHuntCenter() {
+      const stolen = state.bikes.find(b => b.status === 'stolen') || getSelectedBike();
+      if (!stolen) return toast('Cadastre uma bike primeiro', true);
+      renderHuntCenter(stolen.id);
+      openOverlay('alertOverlay');
+    }
+    function renderHuntCenter(id) {
+      const bike = state.bikes.find(b => b.id === id);
+      if (!bike) return;
+      const boText = generateBOText(bike);
+      document.getElementById('alertContent').innerHTML = `
+        <div class="hunt-panel">
+          <h3>` + (bike.status === 'stolen' ? '\uD83D\uDEA8 Modo Caca ativo' : '\uD83D\uDEE1\uFE0F Central de protecao') + `</h3>
+          <p>` + (bike.status === 'stolen' ? 'A bike esta marcada como furtada. Compartilhe o alerta, registre pistas e mantenha o B.O. pronto.' : 'Esta bike esta segura. Se algo acontecer, o alerta pode ser ativado em dois toques.') + `</p>
+        </div>
+        <div class="info-stack">
+          ` + infoRow('Bike', bike.brand + ' ' + bike.model) + `
+          ` + infoRow('Cor', bike.color) + `
+          ` + infoRow('Serie', bike.serial || 'Nao informada') + `
+          ` + infoRow('Status', bike.status === 'stolen' ? 'Furtada / em alerta' : 'Segura') + `
+          ` + infoRow('Horario do alerta', bike.stolenAt ? new Date(bike.stolenAt).toLocaleString('pt-BR') : 'Nao acionado') + `
+        </div>
+        <div class="section-label">Enviar pista</div>
+        <div class="field">
+          <label>Onde voce viu a bike?</label>
+          <textarea id="sightingText" placeholder="Ex: Vi uma bike parecida perto do terminal, com um homem usando mochila preta..."></textarea>
+        </div>
+        <div class="submit-row single">
+          <button class="action-btn primary" onclick="saveSighting('` + bike.id + `')">\uD83D\uDCCD Registrar pista</button>
+        </div>
+        <div class="section-label">Resumo para B.O.</div>
+        <div class="feed-card"><p id="boText">` + escapeHTML(boText) + `</p></div>
+        <div class="submit-row">
+          <button class="action-btn secondary" onclick="copyBO('` + bike.id + `')">Copiar B.O.</button>
+          ` + (bike.status === 'stolen' ? '<button class="action-btn primary" onclick="recoverBike(\'' + bike.id + '\')">\u2705 Bike recuperada</button>' : '<button class="action-btn danger" onclick="confirmStolen(\'' + bike.id + '\')">Ativar alerta</button>') + `
+        </div>
+      `;
+      openOverlay('alertOverlay');
+    }
+    function saveSighting(id) {
+      const text = value('sightingText');
+      if (!text) return toast('Escreva a pista antes de enviar', true);
+      const bike = state.bikes.find(b => b.id === id);
+      state.sightings.unshift({ text: 'Pista para ' + bike.brand + ' ' + bike.model + ': ' + text, time: 'agora', type: 'alert' });
+      document.getElementById('sightingText').value = '';
+      render();
+      toast('Pista registrada na comunidade');
+    }
+    function recoverBike(id) {
+      const bike = state.bikes.find(b => b.id === id);
+      if (!bike) return;
+      bike.status = 'safe';
+      delete bike.stolenAt;
+      state.sightings.unshift({ text: bike.brand + ' ' + bike.model + ' foi marcada como recuperada.', time: 'agora', type: 'safe' });
+      render();
+      closeOverlay('alertOverlay');
+      closeOverlay('detailOverlay');
+      toast('Bike marcada como recuperada');
+    }
+    function generateBOText(bike) {
+      return 'Solicito registro de ocorrencia referente ao furto da bicicleta ' + bike.brand + ' ' + bike.model + ', cor ' + bike.color + ', numero de serie ' + (bike.serial || 'nao informado') + ', com detalhes: ' + (bike.notes || 'sem observacoes adicionais') + '. Alerta BikeSafe ativado em ' + (bike.stolenAt ? new Date(bike.stolenAt).toLocaleString('pt-BR') : 'data ainda nao registrada') + '.';
+    }
+    function copyBO(id) {
+      const bike = state.bikes.find(b => b.id === id);
+      if (!bike) return;
+      copyText(generateBOText(bike));
+    }
+    function copyText(text) {
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(text).then(() => toast('Copiado')).catch(() => toast('Nao foi possivel copiar', true));
+      } else {
+        toast('Nao foi possivel copiar', true);
+      }
+    }
+    function openProfile() { openOverlay('profileOverlay'); }
+    function openOverlay(id) { document.getElementById(id).classList.add('open'); }
+    function closeOverlay(id) { document.getElementById(id).classList.remove('open'); }
+    function value(id) { const el = document.getElementById(id); return el && el.value ? el.value.trim() : ''; }
+    function infoRow(label, valueText) {
+      return '<div class="info-row"><span>' + escapeHTML(label) + '</span><span>' + escapeHTML(String(valueText)) + '</span></div>';
+    }
+    function toast(message, error = false) {
+      const el = document.getElementById('toast');
+      el.textContent = message;
+      el.classList.toggle('error', error);
+      el.classList.add('show');
+      clearTimeout(window.__toastTimer);
+      window.__toastTimer = setTimeout(() => el.classList.remove('show'), 2400);
+    }
+    function bindSearch() {
+      document.getElementById('searchInput').addEventListener('input', event => {
+        const q = event.target.value.trim().toLowerCase();
+        if (!q) { renderBikeList(); return; }
+        const list = document.getElementById('bikeList');
+        const results = state.bikes.filter(b => (b.brand + ' ' + b.model + ' ' + b.color + ' ' + b.serial + ' ' + b.notes).toLowerCase().includes(q));
+        list.innerHTML = results.length ? results.map(bike => `
+          <article class="list-card ` + (bike.status === 'stolen' ? 'stolen' : '') + `" onclick="selectBike('` + bike.id + `')">
+            <div class="list-thumb">` + photoHTML(bike, '\uD83D\uDEB2') + `</div>
+            <div><h3>` + escapeHTML(bike.brand) + ` ` + escapeHTML(bike.model) + `</h3><p>` + escapeHTML(bike.color) + ` \u2022 ` + escapeHTML(bike.serial || 'sem serie') + `</p></div>
+            <div class="chev">\u203A</div>
+          </article>
+        `).join('') : '<div class="empty">Nenhuma bike encontrada para \u201C' + escapeHTML(q) + '\u201D.</div>';
+        toggleSheet(true);
+      });
+    }
+    function escapeHTML(str) {
+      return String(str).replace(/[&<>'"]/g, char => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        "'": '&#39;',
+        '"': '&quot;'
+      }[char]));
+    }
+    window.addEventListener('click', event => {
+      if (event.target.classList.contains('overlay')) event.target.classList.remove('open');
+    });
+    window.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
