@@ -41,6 +41,15 @@ export async function createBike(uid, bike) {
   return ref.id;
 }
 
+export async function updateBike(bikeId, bike) {
+  return updateDoc(doc(db, "bikes", bikeId), {
+    brand: bike.brand, model: bike.model, color: bike.color,
+    serial: bike.serial || "", invoice: bike.invoice || "",
+    tracker: bike.tracker || "", notes: bike.notes || "",
+    photos: (bike.photos || []).filter(Boolean)
+  });
+}
+
 export function markStolen(bikeId, coords) {
   const data = { status: "stolen", stolenAt: serverTimestamp() };
   if (coords) { data.lat = coords[0]; data.lng = coords[1]; }
