@@ -30,6 +30,15 @@ export async function saveBikeCloud(bike) {
   if (MODE !== "firebase") return null;
   return svc.createBike(svc.getUid(), bike);
 }
+export async function editBikeCloud(bikeId, bike) {
+  if (MODE !== "firebase") return null;
+  return svc.updateBike(bikeId, bike);
+}
+export async function removeBikeCloud(bikeId) {
+  if (MODE !== "firebase") return null;
+  return svc.removeBike(bikeId);
+}
+
 export async function stolenCloud(bikeId, coords) {
   if (MODE !== "firebase") return null;
   return svc.markStolen(bikeId, coords);
