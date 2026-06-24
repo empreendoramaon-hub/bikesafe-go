@@ -191,7 +191,12 @@
       body { background: var(--page-bg); }
       .app { min-height: min(920px, 100vh); border-radius: 34px; overflow: hidden; margin-top: 0; }
     }
-  </style>
+      /* Botao Voltar nos modais internos */
+    .back-btn{display:inline-flex;align-items:center;gap:6px;background:transparent;border:0;color:var(--ink,inherit);font:inherit;font-weight:700;font-size:15px;cursor:pointer;padding:8px 10px 8px 0;margin-right:auto;opacity:.9}
+    .back-btn:hover{opacity:1}
+    .back-btn:active{transform:translateY(1px)}
+    .modal-head{align-items:center}
+</style>
 </head>
 <body>
   <main class="app" id="app">
@@ -801,7 +806,25 @@
     }
     window.addEventListener('click', e => { if (e.target.classList && e.target.classList.contains('overlay') && !e.target.classList.contains('center')) e.target.classList.remove('open'); });
 
-    boot();
+    // ---------- Botao Voltar automatico nos modais ----------
+function injectBackButtons(){
+  document.querySelectorAll(".overlay").forEach(function(ov){
+    var head = ov.querySelector(".modal-head");
+    if(!head || head.querySelector(".back-btn")) return;
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "back-btn";
+    btn.setAttribute("aria-label","Voltar");
+    btn.innerHTML = "\u2190 Voltar";
+    btn.addEventListener("click", function(){
+      if(typeof closeOverlay === "function"){ closeOverlay(ov.id); }
+      else { ov.classList.remove("open"); }
+    });
+    head.insertBefore(btn, head.firstChild);
+  });
+}
+try{ injectBackButtons(); }catch(e){ console.warn("backBtn", e); }
+boot();
   </script>
 </body>
 </html>
