@@ -269,6 +269,12 @@
             <label>Senha</label>
             <input id="authPass" type="password" required minlength="6" placeholder="Minimo 6 caracteres" />
           </div>
+          <div class="field" id="consentField" style="display:none">
+            <label style="display:flex;align-items:flex-start;gap:8px;font-size:12px;line-height:1.4;cursor:pointer;font-weight:600">
+              <input type="checkbox" id="consentCheck" style="margin-top:2px;flex:0 0 auto" />
+              <span>Li e aceito os <button type="button" onclick="openConsent()" style="background:none;border:0;color:var(--blue,#2f6fed);text-decoration:underline;cursor:pointer;font:inherit;padding:0">Termos de Uso, a Politica de Privacidade e o Aviso de Tratamento de Dados (LGPD)</button>, incluindo o compartilhamento de dados com terceiros para publicidade e a monetizacao do app.</span>
+            </label>
+          </div>
           <button type="submit" class="action-btn primary wide" id="authSubmitBtn">Entrar</button>
         </form>
         <div class="divider">ou</div>
@@ -280,11 +286,40 @@
       </div>
     </div>
 
+    <div class="overlay" id="consentOverlay">
+      <div class="modal">
+        <div class="sheet-grabber"></div>
+        <div class="modal-head">
+          <h2 id="consentTitle">Termos, Privacidade e LGPD</h2>
+          <button class="close-btn" onclick="closeOverlay('consentOverlay')">&times;</button>
+        </div>
+        <div class="consent-body" style="overflow-y:auto;max-height:60vh;padding:0 4px;font-size:13px;line-height:1.55">
+          <p style="background:rgba(255,180,0,.15);border:1px solid rgba(255,180,0,.4);border-radius:10px;padding:10px;font-weight:700">RASCUNHO — este texto e um modelo inicial e precisa de revisao juridica antes da publicacao.</p>
+          <div class="section-label">1. Termos de Uso</div>
+          <p>O BikeSafe e um aplicativo para registro de bicicletas, geracao de QR Code e alerta de furto. Ao criar uma conta voce concorda em usar o app de forma licita e fornecer informacoes verdadeiras sobre suas bicicletas. O servico e oferecido "no estado em que se encontra", sem garantia de recuperacao de bens furtados.</p>
+          <div class="section-label">2. Politica de Privacidade e Dados Coletados</div>
+          <p>Coletamos dados de cadastro (nome, e-mail), dados das bicicletas (marca, modelo, cor, numero de serie, fotos), localizacao aproximada e dados de uso do aplicativo. Esses dados sao armazenados em servidores do Firebase (Google) e usados para operar o servico, exibir mapas e alertas, e melhorar o app.</p>
+          <div class="section-label">3. Rastreamento, Publicidade e Terceiros</div>
+          <p>O app utiliza tecnologias de rastreamento e analise de uso. Dados podem ser compartilhados com parceiros de publicidade e analise, incluindo Meta (Facebook), Google e outras redes de anuncios, para exibicao de anuncios personalizados, medicao de desempenho e monetizacao do aplicativo. Esses parceiros podem combinar esses dados com outras informacoes que possuam.</p>
+          <div class="section-label">4. Monetizacao</div>
+          <p>O BikeSafe pode gerar receita por meio de anuncios, recursos pagos e parcerias. O aceite e necessario para manter o app gratuito financiado por publicidade.</p>
+          <div class="section-label">5. Seus direitos (LGPD - Lei 13.709/2018)</div>
+          <p>Voce tem direito de acessar, corrigir, portar e solicitar a exclusao dos seus dados, bem como revogar este consentimento a qualquer momento. A revogacao nao afeta tratamentos ja realizados e pode limitar o uso de recursos do app. Para exercer seus direitos, entre em contato com o controlador pelo e-mail de suporte.</p>
+          <div class="section-label">6. Consentimento</div>
+          <p>Ao marcar a caixa de aceite e criar sua conta, voce declara que leu e concorda com os Termos de Uso, a Politica de Privacidade e o tratamento de dados descrito acima, incluindo o compartilhamento com terceiros para publicidade e a monetizacao do app.</p>
+        </div>
+        <div class="submit-row">
+          <button class="action-btn secondary" onclick="closeOverlay('consentOverlay')">Fechar</button>
+          <button class="action-btn primary" onclick="acceptConsentFromDoc()">Li e aceito</button>
+        </div>
+      </div>
+    </div>
+
     <div class="overlay" id="registerOverlay">
       <div class="modal">
         <div class="sheet-grabber"></div>
         <div class="modal-head">
-          <h2>Nova bike</h2>
+          <h2 id="registerTitle">Nova bike</h2>
           <button class="close-btn" onclick="closeOverlay('registerOverlay')">&#10005;</button>
         </div>
         <form class="form-grid" id="bikeForm" onsubmit="saveBike(event)">
@@ -317,7 +352,7 @@
           <div class="field"><label>Detalhes que ajudam a identificar</label><textarea id="notes" placeholder="Adesivos, arranhoes, pecas trocadas, selim, guidao..."></textarea></div>
           <div class="submit-row">
             <button type="button" class="action-btn secondary" onclick="closeOverlay('registerOverlay')">Cancelar</button>
-            <button type="submit" class="action-btn primary">Salvar bike</button>
+            <button type="submit" class="action-btn primary" id="registerSubmitBtn">Salvar bike</button>
           </div>
         </form>
       </div>
@@ -358,7 +393,7 @@
     <div class="toast" id="toast"></div>
   </main>
   <script type="module">
-    import { initDataLayer, isCloud, saveBikeCloud, stolenCloud, recoverCloud, sightingCloud } from './data-layer.js';
+    import { initDataLayer, isCloud, saveBikeCloud, editBikeCloud, removeBikeCloud, stolenCloud, recoverCloud, sightingCloud } from './data-layer.js';
 
     const STORAGE_KEY = 'bikesafe-go-state-v3';
     const THEME_KEY = 'bikesafe-theme';
@@ -442,8 +477,27 @@
         ? 'Nao tem conta? <button type="button" onclick="toggleAuthMode()">Criar conta</button>'
         : 'Ja tem conta? <button type="button" onclick="toggleAuthMode()">Entrar</button>';
     };
+    window.openConsent = function () { openOverlay('consentOverlay'); };
+    window.acceptConsentFromDoc = function () {
+      var cc = document.getElementById('consentCheck');
+      if (cc) cc.checked = true;
+      closeOverlay('consentOverlay');
+      toast('Consentimento registrado. Conclua a criacao da conta.');
+    };
+    window.__syncConsentField = function () {
+      var nf = document.getElementById('nameField');
+      var cf = document.getElementById('consentField');
+      if (nf && cf) cf.style.display = (nf.style.display !== 'none') ? '' : 'none';
+    };
     window.submitAuth = function (e) {
       e.preventDefault();
+      var _nf = document.getElementById('nameField');
+      var _isSignup = _nf && _nf.style.display !== 'none';
+      if (_isSignup) {
+        var _cc = document.getElementById('consentCheck');
+        if (!_cc || !_cc.checked) { toast('Voce precisa aceitar os Termos, Privacidade e LGPD para criar a conta', true); return; }
+        try { localStorage.setItem('bikesafe_consent', JSON.stringify({ accepted: true, version: '1.0-draft', at: new Date().toISOString() })); } catch (err) {}
+      }
       const email = val('authEmail'), pass = val('authPass'), name = val('authName') || email.split('@')[0];
       if (pass.length < 6) return toast('Senha precisa de 6+ caracteres', true);
       currentUser = { name, email, uid: 'local-' + btoa(email).replace(/=/g,'') };
@@ -620,6 +674,9 @@
     window.panicSelectedBike = function () { const b = getSelectedBike(); if (!b) return toast('Cadastre uma bike primeiro', true); openAlertConfirm(b.id); };
     window.toggleSheet = function (force) { const sh = document.getElementById('sheet'); if (typeof force === 'boolean') sh.classList.toggle('expanded', force); else sh.classList.toggle('expanded'); setTimeout(() => map && map.invalidateSize(), 340); };
     window.openRegister = function () {
+      window.__editingBikeId = null;
+      var _rt = document.getElementById('registerTitle'); if (_rt) _rt.textContent = 'Nova bike';
+      var _rb = document.getElementById('registerSubmitBtn'); if (_rb) _rb.textContent = 'Salvar bike';
       if (!requireAuth()) return;
       state.photosDraft = ['', '', ''];
       document.getElementById('bikeForm').reset();
@@ -637,11 +694,44 @@
       event.preventDefault();
       if (!requireAuth()) return;
       const bike = { id: cryptoId(), brand: val('brand'), model: val('model'), color: val('color'), serial: val('serial'), invoice: val('invoice'), tracker: val('tracker'), notes: val('notes'), status: 'safe', ownerId: currentUser.uid, createdAt: Date.now(), lat: userCoords ? userCoords[0] : -27.5954 + (Math.random()-.5)*.05, lng: userCoords ? userCoords[1] : -48.5480 + (Math.random()-.5)*.05, photos: state.photosDraft.filter(Boolean) };
-      if (cloud) { try { await saveBikeCloud(bike); } catch (e) { toast('Erro ao salvar na nuvem', true); console.warn(e); } }
+      if (cloud) { try { if (window.__editingBikeId) { await editBikeCloud(window.__editingBikeId, bike); } else { await saveBikeCloud(bike); } } catch (e) { toast('Erro ao salvar na nuvem', true); console.warn(e); } }
       else { state.bikes.unshift(bike); state.selectedBikeId = bike.id; }
       closeOverlay('registerOverlay');
       render();
-      toast('Bike cadastrada e QR pronto');
+      toast(window.__editingBikeId ? 'Bike atualizada' : 'Bike cadastrada e QR pronto');
+      window.__editingBikeId = null;
+    };
+    window.editBike = function (id) {
+      if (!requireAuth()) return;
+      var bike = state.bikes.find(function (b) { return b.id === id; });
+      if (!bike) return;
+      window.__editingBikeId = id;
+      document.getElementById('bikeForm').reset();
+      var f = document.getElementById('bikeForm');
+      if (f.brand) f.brand.value = bike.brand || '';
+      if (f.model) f.model.value = bike.model || '';
+      if (f.color) f.color.value = bike.color || '';
+      if (f.serial) f.serial.value = bike.serial || '';
+      if (f.invoice) f.invoice.value = bike.invoice || '';
+      if (f.tracker) f.tracker.value = bike.tracker || '';
+      if (f.notes) f.notes.value = bike.notes || '';
+      var rt = document.getElementById('registerTitle'); if (rt) rt.textContent = 'Editar bike';
+      var rb = document.getElementById('registerSubmitBtn'); if (rb) rb.textContent = 'Salvar alteracoes';
+      closeOverlay('detailOverlay');
+      openOverlay('registerOverlay');
+    };
+    window.deleteBike = async function (id) {
+      if (!requireAuth()) return;
+      var bike = state.bikes.find(function (b) { return b.id === id; });
+      if (!bike) return;
+      if (!window.confirm('Tem certeza que deseja excluir esta bike? Esta acao nao pode ser desfeita.')) return;
+      var cloud = isCloud();
+      if (cloud) { try { await removeBikeCloud(id); } catch (e) { toast('Erro ao excluir na nuvem', true); console.warn(e); } }
+      state.bikes = state.bikes.filter(function (b) { return b.id !== id; });
+      try { saveLocal(); } catch (e) {}
+      closeOverlay('detailOverlay');
+      render();
+      toast('Bike excluida');
     };
     window.openBikeDetail = function (id, scrollQR) {
       const bike = state.bikes.find(b => b.id === id);
@@ -654,6 +744,7 @@
         '<div class="info-stack">' + infoRow('Marca', bike.brand) + infoRow('Modelo', bike.model) + infoRow('Cor', bike.color) + infoRow('No de serie', bike.serial || 'Nao informado') + infoRow('NF-e / comprovante', bike.invoice || 'Nao anexado') + infoRow('Rastreador', bike.tracker ? 'Configurado' : 'Nao configurado') + infoRow('Observacoes', bike.notes || 'Sem observacoes') + '</div>' +
         '<div class="section-label" id="qrAnchor">QR Code da bike</div><div class="qr-box" id="qrBox"></div>' +
         '<div class="submit-row"><button class="action-btn secondary" onclick="copyText(\'' + publicUrl + '\')">Copiar link</button><button class="action-btn primary" onclick="downloadQR()">Baixar QR</button></div>' +
+        '<div class="submit-row"><button class="action-btn secondary" onclick="editBike(\'' + bike.id + '\')">Editar</button><button class="action-btn danger" onclick="deleteBike(\'' + bike.id + '\')">Excluir</button></div>' +
         '<div class="submit-row ' + (bike.status === 'stolen' ? '' : 'single') + '">' + (bike.status === 'stolen' ? '<button class="action-btn primary" onclick="recoverBike(\'' + bike.id + '\')">\u2705 Recuperei</button>' : '') + '<button class="action-btn danger" onclick="openAlertConfirm(\'' + bike.id + '\')">\uD83D\uDEA8 Minha bike sumiu</button></div>';
       openOverlay('detailOverlay');
       setTimeout(() => renderQR(publicUrl), 20);
@@ -809,7 +900,7 @@
     // ---------- Botao Voltar automatico nos modais ----------
 function injectBackButtons(){
   document.querySelectorAll(".overlay").forEach(function(ov){
-    var head = ov.querySelector(".modal-head");
+    var head = (ov.querySelector(".modal-head") || ov.querySelector(".auth-hero"));
     if(!head || head.querySelector(".back-btn")) return;
     var btn = document.createElement("button");
     btn.type = "button";
@@ -823,7 +914,17 @@ function injectBackButtons(){
     head.insertBefore(btn, head.firstChild);
   });
 }
-try{ injectBackButtons(); }catch(e){ console.warn("backBtn", e); }
+try {
+      if (typeof window.toggleAuthMode === 'function') {
+        var _origToggle = window.toggleAuthMode;
+        window.toggleAuthMode = function () { var r = _origToggle.apply(this, arguments); try { window.__syncConsentField(); } catch (e) {} return r; };
+      }
+      if (typeof window.openAuth === 'function') {
+        var _origOpenAuth = window.openAuth;
+        window.openAuth = function () { var r = _origOpenAuth.apply(this, arguments); try { window.__syncConsentField(); } catch (e) {} return r; };
+      }
+    } catch (e) { console.warn('consent hook', e); }
+    try{ injectBackButtons(); }catch(e){ console.warn("backBtn", e); }
 boot();
   </script>
 </body>
