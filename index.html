@@ -207,6 +207,47 @@
 .tab-btn.nav-link{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border-radius:17px;padding:8px 4px;font-size:10.5px;font-weight:900;transition:.18s ease}
 .tab-btn.nav-link svg{width:22px;height:22px;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;fill:none}
 @media(max-width:390px){.quick-actions{gap:6px}.action-btn.app-action{min-height:64px;font-size:11px;padding:9px 5px}}
+
+/* ===== Ajustes de topo + tema minimalista monocromatico (v3) ===== */
+:root{
+  --line: var(--border);
+  --surface-2: var(--chip, var(--surface));
+  --shadow-soft: var(--shadow);
+}
+.top-layer{ display:flex; flex-direction:column; gap:10px; }
+.brand-chip{ margin-top:0; align-self:flex-start; }
+.status-strip{
+  position:absolute; left:14px; right:14px;
+  top: calc(132px + env(safe-area-inset-top, 0px));
+  z-index:9; display:flex; gap:8px; flex-wrap:nowrap;
+  overflow-x:auto; padding-bottom:2px;
+}
+.map-actions{ top: calc(180px + env(safe-area-inset-top, 0px)); }
+.status-strip > *{ flex:0 0 auto; white-space:nowrap; }
+#themeBtn.float-action{
+  width:44px; height:44px; border-radius:999px;
+  background: var(--surface); color: var(--text);
+  border:1px solid var(--border); box-shadow: var(--shadow);
+  font-size:20px; font-weight:900;
+}
+#themeBtn.float-action:hover{ background: var(--chip, var(--surface)); }
+.float-action{ color: var(--text); }
+.tabs{
+  display:grid; grid-template-columns:repeat(4,1fr); gap:5px;
+  background: transparent; padding:6px;
+  border:1px solid var(--border); border-radius:20px; box-shadow: var(--shadow);
+}
+.tab-btn.nav-link{
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:3px; border-radius:15px; padding:8px 4px; font-size:10.5px; font-weight:900;
+  color: var(--muted); background: transparent; transition:.18s ease;
+}
+.tab-btn.nav-link svg{ width:22px; height:22px; stroke:currentColor; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round; fill:none; }
+.tab-btn.nav-link.active{ color: var(--text); background: var(--surface); box-shadow: var(--shadow); }
+.action-btn.app-action{ color: var(--muted); background: var(--surface); border:1px solid var(--border); }
+.action-btn.app-action.active{ color: var(--text); }
+.action-btn.app-action:hover{ color: var(--text); }
+
 </style>
 </head>
 <body>
@@ -225,7 +266,7 @@
     <div class="status-strip" id="statusStrip"></div>
     <div class="map-actions">
       <button class="float-action" onclick="centerUser()" title="Minha localizacao">&#128205;</button>
-      <button class="float-action" onclick="toggleTheme()" title="Tema claro/escuro" id="themeBtn">&#127761;</button>
+      <button class="float-action" onclick="toggleTheme()" title="Tema claro/escuro" id="themeBtn">◐</button>
       <button class="float-action" onclick="openHuntCenter()" title="Alertas">&#128680;</button>
     </div>
     <section class="sheet" id="sheet">
@@ -305,7 +346,7 @@
           <button class="close-btn" onclick="closeOverlay('consentOverlay')">&times;</button>
         </div>
         <div class="consent-body" style="overflow-y:auto;max-height:60vh;padding:0 4px;font-size:13px;line-height:1.55">
-          <p style="background:rgba(255,180,0,.15);border:1px solid rgba(255,180,0,.4);border-radius:10px;padding:10px;font-weight:700">RASCUNHO Ã¢ÂÂ este texto e um modelo inicial e precisa de revisao juridica antes da publicacao.</p>
+          <p style="background:rgba(255,180,0,.15);border:1px solid rgba(255,180,0,.4);border-radius:10px;padding:10px;font-weight:700">RASCUNHO ÃÂ¢ÃÂÃÂ este texto e um modelo inicial e precisa de revisao juridica antes da publicacao.</p>
           <div class="section-label">1. Termos de Uso</div>
           <p>O BikeSafe e um aplicativo para registro de bicicletas, geracao de QR Code e alerta de furto. Ao criar uma conta voce concorda em usar o app de forma licita e fornecer informacoes verdadeiras sobre suas bicicletas. O servico e oferecido "no estado em que se encontra", sem garantia de recuperacao de bens furtados.</p>
           <div class="section-label">2. Politica de Privacidade e Dados Coletados</div>
@@ -939,7 +980,7 @@ try {
 boot();
   </script>
 <script type="module">
-  // === Login real (Google + e-mail/senha) — sobrescreve os handlers demo ===
+  // === Login real (Google + e-mail/senha) â sobrescreve os handlers demo ===
   import { loginGoogle, loginEmail, signupEmail, logout as svcLogout } from "./firebase-service.js";
   (function(){
     let loginMode = "login";
@@ -951,20 +992,20 @@ boot();
       if(t) t.textContent = isSignup ? "Criar conta" : "Entrar";
       if(s) s.textContent = isSignup ? "Cadastre-se para proteger suas bikes." : "Bem-vindo de volta.";
       if(b) b.textContent = isSignup ? "Cadastrar" : "Entrar";
-      if(sw) sw.textContent = isSignup ? "Já tem conta? Entrar" : "Não tem conta? Cadastre-se";
+      if(sw) sw.textContent = isSignup ? "JÃ¡ tem conta? Entrar" : "NÃ£o tem conta? Cadastre-se";
       if(nf) nf.style.display = isSignup ? "" : "none";
     }
     window.toggleAuthMode = function(){ loginMode = (loginMode==="login")?"signup":"login"; renderMode(); };
     function friendlyError(code){
-      const map={"auth/invalid-email":"E-mail inválido.","auth/missing-password":"Digite a senha.","auth/weak-password":"Senha fraca: use ao menos 6 caracteres.","auth/email-already-in-use":"Este e-mail já está cadastrado. Tente entrar.","auth/invalid-credential":"E-mail ou senha incorretos.","auth/wrong-password":"Senha incorreta.","auth/user-not-found":"Conta não encontrada. Cadastre-se."};
-      return map[code] || "Não foi possível concluir. Tente novamente.";
+      const map={"auth/invalid-email":"E-mail invÃ¡lido.","auth/missing-password":"Digite a senha.","auth/weak-password":"Senha fraca: use ao menos 6 caracteres.","auth/email-already-in-use":"Este e-mail jÃ¡ estÃ¡ cadastrado. Tente entrar.","auth/invalid-credential":"E-mail ou senha incorretos.","auth/wrong-password":"Senha incorreta.","auth/user-not-found":"Conta nÃ£o encontrada. Cadastre-se."};
+      return map[code] || "NÃ£o foi possÃ­vel concluir. Tente novamente.";
     }
     window.submitAuth = async function(ev){
       if(ev&&ev.preventDefault) ev.preventDefault();
       const email=($("authEmail")||{}).value||"";
       const pass=($("authPass")||{}).value||"";
       const consent=$("consentCheck");
-      if(loginMode==="signup" && consent && !consent.checked){ say("Você precisa aceitar os termos e a política de privacidade."); return; }
+      if(loginMode==="signup" && consent && !consent.checked){ say("VocÃª precisa aceitar os termos e a polÃ­tica de privacidade."); return; }
       try{
         if(loginMode==="signup"){ await signupEmail(email.trim(),pass); try{localStorage.setItem("bikesafe_consent","1");}catch(e){} say("Conta criada! Bem-vindo."); }
         else { await loginEmail(email.trim(),pass); say("Login efetuado."); }
