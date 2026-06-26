@@ -220,7 +220,7 @@
         </label>
         <button class="round-btn" onclick="openProfile()" title="Perfil">&#128100;</button>
       </div>
-      <button class="brand-chip" onclick="toggleSheet(true)">Bike<span>Safe</span> Go<span class="mode-tag" id="modeTag">demo</span></button>
+      <button class="brand-chip" onclick="toggleSheet(true)">Bike<span>Safe</span> Go<span class="mode-tag" id="modeTag"></span></button>
     </section>
     <div class="status-strip" id="statusStrip"></div>
     <div class="map-actions">
@@ -293,7 +293,7 @@
         <div class="auth-switch" id="authSwitch">
           Nao tem conta? <button type="button" onclick="toggleAuthMode()">Criar conta</button>
         </div>
-        <div class="note" id="authNote">Modo demonstracao: enquanto o Firebase nao estiver configurado, o login e os dados ficam salvos apenas neste navegador.</div>
+        <div class="note" id="authNote">Crie sua conta ou entre para proteger suas bikes. Seus dados ficam salvos na nuvem.</div>
       </div>
     </div>
 
@@ -305,7 +305,7 @@
           <button class="close-btn" onclick="closeOverlay('consentOverlay')">&times;</button>
         </div>
         <div class="consent-body" style="overflow-y:auto;max-height:60vh;padding:0 4px;font-size:13px;line-height:1.55">
-          <p style="background:rgba(255,180,0,.15);border:1px solid rgba(255,180,0,.4);border-radius:10px;padding:10px;font-weight:700">RASCUNHO â este texto e um modelo inicial e precisa de revisao juridica antes da publicacao.</p>
+          <p style="background:rgba(255,180,0,.15);border:1px solid rgba(255,180,0,.4);border-radius:10px;padding:10px;font-weight:700">RASCUNHO Ã¢ÂÂ este texto e um modelo inicial e precisa de revisao juridica antes da publicacao.</p>
           <div class="section-label">1. Termos de Uso</div>
           <p>O BikeSafe e um aplicativo para registro de bicicletas, geracao de QR Code e alerta de furto. Ao criar uma conta voce concorda em usar o app de forma licita e fornecer informacoes verdadeiras sobre suas bicicletas. O servico e oferecido "no estado em que se encontra", sem garantia de recuperacao de bens furtados.</p>
           <div class="section-label">2. Politica de Privacidade e Dados Coletados</div>
@@ -938,5 +938,43 @@ try {
     try{ injectBackButtons(); }catch(e){ console.warn("backBtn", e); }
 boot();
   </script>
+<script type="module">
+  // === Login real (Google + e-mail/senha) — sobrescreve os handlers demo ===
+  import { loginGoogle, loginEmail, signupEmail, logout as svcLogout } from "./firebase-service.js";
+  (function(){
+    let loginMode = "login";
+    const $ = (id) => document.getElementById(id);
+    const say = (m) => { try { if (window.toast) window.toast(m); else console.log(m); } catch(e){} };
+    function renderMode(){
+      const isSignup = loginMode === "signup";
+      const t=$("authTitle"),s=$("authSubtitle"),b=$("authSubmitBtn"),sw=$("authSwitch"),nf=$("nameField");
+      if(t) t.textContent = isSignup ? "Criar conta" : "Entrar";
+      if(s) s.textContent = isSignup ? "Cadastre-se para proteger suas bikes." : "Bem-vindo de volta.";
+      if(b) b.textContent = isSignup ? "Cadastrar" : "Entrar";
+      if(sw) sw.textContent = isSignup ? "Já tem conta? Entrar" : "Não tem conta? Cadastre-se";
+      if(nf) nf.style.display = isSignup ? "" : "none";
+    }
+    window.toggleAuthMode = function(){ loginMode = (loginMode==="login")?"signup":"login"; renderMode(); };
+    function friendlyError(code){
+      const map={"auth/invalid-email":"E-mail inválido.","auth/missing-password":"Digite a senha.","auth/weak-password":"Senha fraca: use ao menos 6 caracteres.","auth/email-already-in-use":"Este e-mail já está cadastrado. Tente entrar.","auth/invalid-credential":"E-mail ou senha incorretos.","auth/wrong-password":"Senha incorreta.","auth/user-not-found":"Conta não encontrada. Cadastre-se."};
+      return map[code] || "Não foi possível concluir. Tente novamente.";
+    }
+    window.submitAuth = async function(ev){
+      if(ev&&ev.preventDefault) ev.preventDefault();
+      const email=($("authEmail")||{}).value||"";
+      const pass=($("authPass")||{}).value||"";
+      const consent=$("consentCheck");
+      if(loginMode==="signup" && consent && !consent.checked){ say("Você precisa aceitar os termos e a política de privacidade."); return; }
+      try{
+        if(loginMode==="signup"){ await signupEmail(email.trim(),pass); try{localStorage.setItem("bikesafe_consent","1");}catch(e){} say("Conta criada! Bem-vindo."); }
+        else { await loginEmail(email.trim(),pass); say("Login efetuado."); }
+      }catch(err){ say(friendlyError(err&&err.code)); }
+    };
+    window.doGoogleLogin = async function(){ try{ await loginGoogle(); say("Login com Google efetuado."); }catch(err){ say(friendlyError(err&&err.code)); } };
+    window.logout = async function(){ try{ await svcLogout(); }catch(e){} try{ const o=$("profileOverlay"); if(o)o.classList.remove("open"); }catch(e){} };
+    window.__onAuthState = function(user){ const ov=$("authOverlay"); if(!user){ if(ov) ov.classList.add("open","center"); renderMode(); } else { if(ov) ov.classList.remove("open"); } };
+    renderMode();
+  })();
+</script>
 </body>
 </html>
