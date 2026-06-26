@@ -1,7 +1,8 @@
 // firebase-service.js
 import { auth, db } from "./firebase-config.js";
 import {
-  signInAnonymously, signInWithPopup, GoogleAuthProvider, onAuthStateChanged
+  signInAnonymously, signInWithPopup, GoogleAuthProvider, onAuthStateChanged,
+  signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
   collection, doc, addDoc, updateDoc, deleteDoc, onSnapshot,
@@ -16,6 +17,15 @@ export function watchAuth(onChange) {
 }
 export function loginAnon() { return signInAnonymously(auth); }
 export function loginGoogle() { return signInWithPopup(auth, new GoogleAuthProvider()); }
+export function signupEmail(email, password) {
+  return createUserWithEmailAndPassword(auth, email, password);
+}
+export function loginEmail(email, password) {
+  return signInWithEmailAndPassword(auth, email, password);
+}
+export function logout() {
+  return signOut(auth);
+}
 export function getUid() { return currentUser ? currentUser.uid : null; }
 
 // ---- BIKES ----
