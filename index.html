@@ -196,6 +196,17 @@
     .back-btn:hover{opacity:1}
     .back-btn:active{transform:translateY(1px)}
     .modal-head{align-items:center}
+
+/* === Layout v2: botoes acao icone+texto e nav inferior minimalista === */
+.quick-actions{display:flex;gap:8px}
+.action-btn.app-action{flex:1;min-height:68px;border-radius:17px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding:10px 7px;font-size:11.5px;font-weight:900;letter-spacing:-.01em;transition:.18s ease;text-align:center}
+.action-btn.app-action svg{width:22px;height:22px;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;fill:none}
+.action-btn.app-action span{line-height:1}
+.action-btn.app-action:hover{transform:translateY(-1px)}
+.tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
+.tab-btn.nav-link{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border-radius:17px;padding:8px 4px;font-size:10.5px;font-weight:900;transition:.18s ease}
+.tab-btn.nav-link svg{width:22px;height:22px;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;fill:none}
+@media(max-width:390px){.quick-actions{gap:6px}.action-btn.app-action{min-height:64px;font-size:11px;padding:9px 5px}}
 </style>
 </head>
 <body>
@@ -232,17 +243,17 @@
         </div>
         <div class="hero-card" id="mainBikeCard" onclick="openSelectedBike()"></div>
         <div class="quick-actions">
-          <button class="action-btn primary" onclick="openRegister()">&#10133; Cadastrar</button>
-          <button class="action-btn secondary" onclick="openSelectedQR()">&#9635; Ver QR</button>
-          <button class="action-btn danger" onclick="panicSelectedBike()">&#128680; Minha bike sumiu</button>
+          <button class="action-btn app-action primary active" onclick="openRegister()"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M8 12h8"></path><path d="M12 8v8"></path></svg><span>Cadastrar</span></button>
+          <button class="action-btn app-action secondary" onclick="openSelectedQR()"><svg viewBox="0 0 24 24" aria-hidden="true"><rect width="5" height="5" x="3" y="3" rx="1"></rect><rect width="5" height="5" x="16" y="3" rx="1"></rect><rect width="5" height="5" x="3" y="16" rx="1"></rect><path d="M21 16h-3a2 2 0 0 0-2 2v3"></path><path d="M21 21v.01"></path><path d="M12 7v3a2 2 0 0 1-2 2H7"></path><path d="M3 12h.01"></path><path d="M12 3h.01"></path><path d="M12 16v.01"></path><path d="M16 12h1"></path><path d="M21 12v.01"></path><path d="M12 21v-1"></path></svg><span>Ver QR</span></button>
+          <button class="action-btn app-action danger" onclick="panicSelectedBike()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 18v-6a5 5 0 0 1 10 0v6"></path><path d="M5 21h14"></path><path d="M7 18h10"></path><path d="M12 2v3"></path><path d="m4.93 4.93 2.12 2.12"></path><path d="m19.07 4.93-2.12 2.12"></path><path d="M12 12v3"></path></svg><span>Sumiu</span></button>
         </div>
       </div>
       <div class="sheet-body">
         <div class="tabs">
-          <button class="tab-btn active" id="tabGarage" onclick="switchTab('garage')">Garagem</button>
-          <button class="tab-btn" id="tabHunt" onclick="switchTab('hunt')">Procurando</button>
-          <button class="tab-btn" id="tabFeed" onclick="switchTab('feed')">Comunidade</button>
-          <button class="tab-btn" id="tabDb" onclick="switchTab('db')">Banco</button>
+          <button class="tab-btn nav-link active" id="tabGarage" onclick="switchTab('garage')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg><span>Garagem</span></button>
+          <button class="tab-btn nav-link" id="tabHunt" onclick="switchTab('hunt')"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg><span>Procurando</span></button>
+          <button class="tab-btn nav-link" id="tabFeed" onclick="switchTab('feed')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg><span>Comunidade</span></button>
+          <button class="tab-btn nav-link" id="tabDb" onclick="switchTab('db')"><svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M3 5v14a9 3 0 0 0 18 0V5"></path><path d="M3 12a9 3 0 0 0 18 0"></path></svg><span>Banco</span></button>
         </div>
         <div id="tabContent"></div>
       </div>
@@ -294,7 +305,7 @@
           <button class="close-btn" onclick="closeOverlay('consentOverlay')">&times;</button>
         </div>
         <div class="consent-body" style="overflow-y:auto;max-height:60vh;padding:0 4px;font-size:13px;line-height:1.55">
-          <p style="background:rgba(255,180,0,.15);border:1px solid rgba(255,180,0,.4);border-radius:10px;padding:10px;font-weight:700">RASCUNHO — este texto e um modelo inicial e precisa de revisao juridica antes da publicacao.</p>
+          <p style="background:rgba(255,180,0,.15);border:1px solid rgba(255,180,0,.4);border-radius:10px;padding:10px;font-weight:700">RASCUNHO â este texto e um modelo inicial e precisa de revisao juridica antes da publicacao.</p>
           <div class="section-label">1. Termos de Uso</div>
           <p>O BikeSafe e um aplicativo para registro de bicicletas, geracao de QR Code e alerta de furto. Ao criar uma conta voce concorda em usar o app de forma licita e fornecer informacoes verdadeiras sobre suas bicicletas. O servico e oferecido "no estado em que se encontra", sem garantia de recuperacao de bens furtados.</p>
           <div class="section-label">2. Politica de Privacidade e Dados Coletados</div>
