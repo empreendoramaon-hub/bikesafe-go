@@ -535,7 +535,7 @@
       selectedBikeId: null,
       photosDraft: ['', '', ''],
       bikes: [],
-      sightings: []
+      sightings: [], stolenBikes: []
     };
 
     let map = null, markersLayer = null, userMarker = null, userCoords = null;
@@ -673,6 +673,7 @@
       // tenta nuvem
       try {
         const mode = await initDataLayer({
+      onStolen: (list) => { try{ state.stolenBikes = list || []; if (typeof onStolenUpdate==="function") onStolenUpdate(); }catch(e){} },
           onMode: m => { cloud = (m === 'firebase'); updateModeTag(); },
           onBikes: bikes => { if (cloud) { state.bikes = bikes; if (!state.selectedBikeId && bikes.length) state.selectedBikeId = bikes[0].id; render(); } },
           onSightings: list => { if (cloud) { state.sightings = list; render(); } }
@@ -1127,6 +1128,76 @@ boot();
   function init(){ buildThemeToggle(); addReportSuspect(); }
   if(document.readyState!=="loading"){ setTimeout(init,300); }
   else document.addEventListener("DOMContentLoaded", function(){ setTimeout(init,300); });
+})();
+</script>
+
+<!-- Verificar bike suspeita (comunidade) -->
+<div class="overlay" id="verifyOverlay">
+  <div class="sheet">
+    <div class="sheet-head">
+      <button class="close-btn" onclick="closeOverlay('verifyOverlay')" aria-label="Voltar">&#8249;</button>
+      <h2>Verificar bike suspeita</h2>
+    </div>
+    <div style="padding:0 18px 18px;">
+      <p style="font-size:13px;color:var(--muted,#888);margin:0 0 10px;">Encontrou uma bike \u00e0 venda ou abandonada? Digite o n\u00famero de s\u00e9rie para conferir se a comunidade marcou como roubada.</p>
+      <input id="verifySerial" type="text" placeholder="N\u00famero de s\u00e9rie" style="width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border,#ddd);background:var(--chip,#f4f4f4);color:var(--text,#111);font-size:14px;margin-bottom:10px;">
+      <button class="report-suspect-btn" onclick="verifySuspectBike()"><i class="fi fi-bs-search"></i> Verificar agora</button>
+      <div id="verifyResult" style="margin-top:14px;"></div>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  function norm(s){ return (s||"").toString().trim().toLowerCase().replace(/[^a-z0-9]/g,""); }
+  window.verifySuspectBike = function(){
+    var inp = document.getElementById("verifySerial");
+    var box = document.getElementById("verifyResult");
+    if(!inp || !box) return;
+    var q = norm(inp.value);
+    if(!q){ box.innerHTML = '<p style="color:var(--muted,#888);font-size:13px;">Digite um n\u00famero de s\u00e9rie.</p>'; return; }
+    var stolen = (window.state && state.stolenBikes) ? state.stolenBikes : [];
+    var hit = stolen.find(function(b){ return norm(b.serial) === q || (b.serial && norm(b.serial).indexOf(q)>-1 && q.length>=4); });
+    if(hit){
+      box.innerHTML =
+        '<div style="border:1px solid #d12b22;background:rgba(255,59,48,.08);border-radius:14px;padding:14px;">' +
+          '<div style="display:flex;align-items:center;gap:8px;font-weight:800;color:#d12b22;font-size:15px;">' +
+            '<i class="fi fi-sr-seal-exclamation"></i> ATEN\u00c7\u00c3O: marcada como ROUBADA</div>' +
+          '<p style="margin:8px 0 0;font-size:13px;color:var(--text,#111);">' +
+            (hit.brand? (hit.brand+" "):"") + (hit.model||"") + (hit.color? (" \u2022 "+hit.color):"") + '</p>' +
+          '<button class="report-suspect-btn" style="margin-top:10px;border-color:#d12b22;color:#d12b22;" onclick="reportSightingFor(\''+(hit.id||"")+'\')">' +
+            '<i class="fi fi-ss-marker"></i> Reportar que vi esta bike</button>' +
+        '</div>';
+    } else {
+      box.innerHTML =
+        '<div style="border:1px solid var(--border,#ddd);background:var(--chip,#f4f4f4);border-radius:14px;padding:14px;">' +
+          '<div style="font-weight:800;color:var(--text,#111);font-size:14px;">N\u00e3o consta como roubada</div>' +
+          '<p style="margin:6px 0 0;font-size:12px;color:var(--muted,#888);">Nenhum registro de roubo encontrado para esta s\u00e9rie na comunidade. Ainda assim, desconfie de pre\u00e7os muito baixos e pe\u00e7a nota fiscal.</p>' +
+        '</div>';
+    }
+  };
+  window.reportSightingFor = function(id){
+    try{ if(id && typeof selectBike==="function") selectBike(id); }catch(e){}
+    try{ if(typeof openReportSighting==="function"){ closeOverlay && closeOverlay("verifyOverlay"); openReportSighting(); return; } }catch(e){}
+    try{ if(typeof openHuntCenter==="function"){ openHuntCenter(); } }catch(e){}
+  };
+  window.openVerifyBike = function(){
+    var r = document.getElementById("verifyResult"); if(r) r.innerHTML="";
+    var s = document.getElementById("verifySerial"); if(s) s.value="";
+    if(typeof openOverlay==="function") openOverlay("verifyOverlay");
+    else { var ov=document.getElementById("verifyOverlay"); if(ov) ov.classList.add("open"); }
+  };
+  window.onStolenUpdate = function(){ /* hook: stolen list updated */ };
+  function addVerifyBtn(){
+    if(document.getElementById("verifyBikeBtn")) return;
+    var host = document.querySelector("#tab-search, #pane-search, .tab-pane, .search-pane, #tab-community, #pane-community");
+    var b = document.createElement("button");
+    b.id = "verifyBikeBtn"; b.type="button"; b.className="report-suspect-btn";
+    b.innerHTML = '<i class="fi fi-bs-search"></i> Verificar / reportar bike suspeita';
+    b.addEventListener("click", function(){ window.openVerifyBike(); });
+    if(host){ host.appendChild(b); }
+  }
+  if(document.readyState!=="loading"){ setTimeout(addVerifyBtn,400); }
+  else document.addEventListener("DOMContentLoaded", function(){ setTimeout(addVerifyBtn,400); });
 })();
 </script>
 </body>
