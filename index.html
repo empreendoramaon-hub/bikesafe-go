@@ -248,6 +248,41 @@
 .action-btn.app-action.active{ color: var(--text); }
 .action-btn.app-action:hover{ color: var(--text); }
 
+
+/* ====== v5: theme top B&W, teal location, visible stolen btn ====== */
+#themeBtn.float-action{
+  position: fixed;
+  top: calc(14px + env(safe-area-inset-top, 0px));
+  right: 14px; left: auto; bottom: auto;
+  z-index: 1200;
+  width: 44px; height: 44px; border-radius: 999px;
+  background: #ffffff; color: #111111;
+  border: 1px solid rgba(0,0,0,0.12);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; line-height: 1;
+}
+[data-theme="dark"] #themeBtn.float-action{
+  background: #1a1a1a; color: #f2f2f2;
+  border: 1px solid rgba(255,255,255,0.18);
+}
+.map-actions .float-action:not(#themeBtn){
+  background: #4ec5c1; color: #ffffff;
+  border: 1px solid #3aa9a5;
+  box-shadow: 0 4px 12px rgba(78,197,193,0.40);
+}
+.map-actions .float-action:not(#themeBtn):active{ background: #3aa9a5; }
+.action-btn.app-action.danger,
+.action-btn.danger{
+  background: var(--red, #ff3b30) !important;
+  color: #ffffff !important;
+  border: 1px solid #d12b22 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  display: flex !important;
+}
+.action-btn.app-action.danger svg,
+.action-btn.danger svg{ color:#fff !important; fill: currentColor; }
 </style>
 </head>
 <body>
@@ -266,7 +301,7 @@
     <div class="status-strip" id="statusStrip"></div>
     <div class="map-actions">
       <button class="float-action" onclick="centerUser()" title="Minha localizacao">&#128205;</button>
-      <button class="float-action" onclick="toggleTheme()" title="Tema claro/escuro" id="themeBtn">◐</button>
+      <button class="float-action" onclick="toggleTheme()" title="Tema claro/escuro" id="themeBtn">â</button>
       <button class="float-action" onclick="openHuntCenter()" title="Alertas">&#128680;</button>
     </div>
     <section class="sheet" id="sheet">
@@ -346,7 +381,7 @@
           <button class="close-btn" onclick="closeOverlay('consentOverlay')">&times;</button>
         </div>
         <div class="consent-body" style="overflow-y:auto;max-height:60vh;padding:0 4px;font-size:13px;line-height:1.55">
-          <p style="background:rgba(255,180,0,.15);border:1px solid rgba(255,180,0,.4);border-radius:10px;padding:10px;font-weight:700">RASCUNHO ÃÂ¢ÃÂÃÂ este texto e um modelo inicial e precisa de revisao juridica antes da publicacao.</p>
+          <p style="background:rgba(255,180,0,.15);border:1px solid rgba(255,180,0,.4);border-radius:10px;padding:10px;font-weight:700">RASCUNHO ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ este texto e um modelo inicial e precisa de revisao juridica antes da publicacao.</p>
           <div class="section-label">1. Termos de Uso</div>
           <p>O BikeSafe e um aplicativo para registro de bicicletas, geracao de QR Code e alerta de furto. Ao criar uma conta voce concorda em usar o app de forma licita e fornecer informacoes verdadeiras sobre suas bicicletas. O servico e oferecido "no estado em que se encontra", sem garantia de recuperacao de bens furtados.</p>
           <div class="section-label">2. Politica de Privacidade e Dados Coletados</div>
@@ -499,7 +534,7 @@
     function loadLocal() {
       try { const saved = localStorage.getItem(STORAGE_KEY); if (saved) { const p = JSON.parse(saved); state.bikes = p.bikes || []; state.sightings = p.sightings || []; state.selectedBikeId = p.selectedBikeId || null; } }
       catch (e) { console.warn('localStorage', e); }
-      if (!state.bikes.length) seedDemo();
+      if (false) seedDemo(); /* demo seed disabled */
       if (!state.selectedBikeId && state.bikes.length) state.selectedBikeId = state.bikes[0].id;
     }
     function saveLocal() {
@@ -980,7 +1015,7 @@ try {
 boot();
   </script>
 <script type="module">
-  // === Login real (Google + e-mail/senha) â sobrescreve os handlers demo ===
+  // === Login real (Google + e-mail/senha) Ã¢ÂÂ sobrescreve os handlers demo ===
   import { loginGoogle, loginEmail, signupEmail, logout as svcLogout } from "./firebase-service.js";
   (function(){
     let loginMode = "login";
@@ -992,20 +1027,20 @@ boot();
       if(t) t.textContent = isSignup ? "Criar conta" : "Entrar";
       if(s) s.textContent = isSignup ? "Cadastre-se para proteger suas bikes." : "Bem-vindo de volta.";
       if(b) b.textContent = isSignup ? "Cadastrar" : "Entrar";
-      if(sw) sw.textContent = isSignup ? "JÃ¡ tem conta? Entrar" : "NÃ£o tem conta? Cadastre-se";
+      if(sw) sw.textContent = isSignup ? "JÃÂ¡ tem conta? Entrar" : "NÃÂ£o tem conta? Cadastre-se";
       if(nf) nf.style.display = isSignup ? "" : "none";
     }
     window.toggleAuthMode = function(){ loginMode = (loginMode==="login")?"signup":"login"; renderMode(); };
     function friendlyError(code){
-      const map={"auth/invalid-email":"E-mail invÃ¡lido.","auth/missing-password":"Digite a senha.","auth/weak-password":"Senha fraca: use ao menos 6 caracteres.","auth/email-already-in-use":"Este e-mail jÃ¡ estÃ¡ cadastrado. Tente entrar.","auth/invalid-credential":"E-mail ou senha incorretos.","auth/wrong-password":"Senha incorreta.","auth/user-not-found":"Conta nÃ£o encontrada. Cadastre-se."};
-      return map[code] || "NÃ£o foi possÃ­vel concluir. Tente novamente.";
+      const map={"auth/invalid-email":"E-mail invÃÂ¡lido.","auth/missing-password":"Digite a senha.","auth/weak-password":"Senha fraca: use ao menos 6 caracteres.","auth/email-already-in-use":"Este e-mail jÃÂ¡ estÃÂ¡ cadastrado. Tente entrar.","auth/invalid-credential":"E-mail ou senha incorretos.","auth/wrong-password":"Senha incorreta.","auth/user-not-found":"Conta nÃÂ£o encontrada. Cadastre-se."};
+      return map[code] || "NÃÂ£o foi possÃÂ­vel concluir. Tente novamente.";
     }
     window.submitAuth = async function(ev){
       if(ev&&ev.preventDefault) ev.preventDefault();
       const email=($("authEmail")||{}).value||"";
       const pass=($("authPass")||{}).value||"";
       const consent=$("consentCheck");
-      if(loginMode==="signup" && consent && !consent.checked){ say("VocÃª precisa aceitar os termos e a polÃ­tica de privacidade."); return; }
+      if(loginMode==="signup" && consent && !consent.checked){ say("VocÃÂª precisa aceitar os termos e a polÃÂ­tica de privacidade."); return; }
       try{
         if(loginMode==="signup"){ await signupEmail(email.trim(),pass); try{localStorage.setItem("bikesafe_consent","1");}catch(e){} say("Conta criada! Bem-vindo."); }
         else { await loginEmail(email.trim(),pass); say("Login efetuado."); }
