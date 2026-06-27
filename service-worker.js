@@ -1,5 +1,5 @@
 // service-worker.js - BikeSafe Go PWA
-const CACHE = 'bikesafe-go-v4';
+const CACHE = 'bikesafe-go-v5';
 const ASSETS = [
   './',
   './index.html',
