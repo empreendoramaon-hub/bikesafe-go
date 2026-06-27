@@ -3,7 +3,7 @@ let MODE = "local";   // "firebase" ou "local"
 let svc = null;       // modulo firebase-service carregado dinamicamente
 let unsub = [];       // listeners para limpar depois
 
-export async function initDataLayer({ onBikes, onSightings, onMode, onAuth }) {
+export async function initDataLayer({ onBikes, onSightings, onMode, onAuth, onStolen }) {
   try {
     svc = await import("./firebase-service.js");
     await new Promise((resolve) => {
@@ -14,6 +14,7 @@ export async function initDataLayer({ onBikes, onSightings, onMode, onAuth }) {
         if (onMode) onMode("firebase");
         unsub.push(svc.watchMyBikes(user.uid, onBikes));
         unsub.push(svc.watchSightings(onSightings));
+        if (onStolen && svc.watchStolenBikes) unsub.push(svc.watchStolenBikes(onStolen));
         resolve();
       });
     });
