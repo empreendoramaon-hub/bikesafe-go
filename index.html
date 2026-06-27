@@ -1200,5 +1200,67 @@ boot();
   else document.addEventListener("DOMContentLoaded", function(){ setTimeout(addVerifyBtn,400); });
 })();
 </script>
+
+<script type="module">
+// ====== v8: corrige auth (remove anon/demo), excluir conta, move verify ======
+import { isAnonymousUser, deleteAccount, logout as svcLogout } from "./firebase-service.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+(function(){
+  function clearDemo(){
+    try{ localStorage.removeItem("bikesafe-demo-user"); }catch(e){}
+    try{ localStorage.removeItem("bikesafe-go-state-v1"); }catch(e){}
+    try{ localStorage.removeItem("bikesafe-go-state-v3"); }catch(e){}
+  }
+  function showLogin(){
+    try{ if(typeof openOverlay==="function"){ openOverlay("authOverlay"); return; } }catch(e){}
+    var ov=document.getElementById("authOverlay"); if(ov){ ov.classList.add("open","center"); }
+  }
+  var auth;
+  try{ auth = getAuth(); }catch(e){}
+  if(auth){
+    onAuthStateChanged(auth, function(user){
+      // usuario anonimo nao conta como logado: desloga e exige login real
+      if(user && user.isAnonymous){
+        clearDemo();
+        signOut(auth).then(showLogin).catch(showLogin);
+        return;
+      }
+      if(!user){ clearDemo(); showLogin(); }
+    });
+  }
+  // --- excluir conta no perfil ---
+  function addDeleteAccount(){
+    if(document.getElementById("deleteAccountBtn")) return;
+    var prof=document.getElementById("profileOverlay"); if(!prof) return;
+    var host=prof.querySelector(".sheet, .overlay-body, div") || prof;
+    var b=document.createElement("button");
+    b.id="deleteAccountBtn"; b.type="button"; b.className="report-suspect-btn";
+    b.style.cssText="border-color:#d12b22;color:#d12b22;margin-top:14px;";
+    b.innerHTML="<i class=\"fi fi-sr-seal-exclamation\"></i> Excluir minha conta";
+    b.addEventListener("click", async function(){
+      if(!confirm("Tem certeza? Sua conta sera excluida permanentemente. Esta acao nao pode ser desfeita.")) return;
+      try{ await deleteAccount(); clearDemo(); alert("Conta excluida."); location.reload(); }
+      catch(err){ alert("Para excluir, faca login novamente e tente de novo. ("+(err&&err.code||err)+")"); }
+    });
+    host.appendChild(b);
+  }
+  // --- mover botao verificar para a aba Hunt ---
+  function placeVerify(){
+    var btn=document.getElementById("verifyBikeBtn");
+    var hunt=document.getElementById("tabHunt");
+    if(hunt && !document.getElementById("verifyBikeBtnHunt")){
+      var b=document.createElement("button");
+      b.id="verifyBikeBtnHunt"; b.type="button"; b.className="report-suspect-btn";
+      b.innerHTML="<i class=\"fi fi-bs-search\"></i> Verificar / reportar bike suspeita";
+      b.addEventListener("click", function(){ if(typeof window.openVerifyBike==="function") window.openVerifyBike(); });
+      hunt.insertBefore(b, hunt.firstChild);
+    }
+    if(btn){ btn.remove(); }
+  }
+  function init(){ clearDemo(); addDeleteAccount(); placeVerify(); }
+  if(document.readyState!=="loading"){ setTimeout(init,600); }
+  else document.addEventListener("DOMContentLoaded", function(){ setTimeout(init,600); });
+})();
+</script>
 </body>
 </html>
