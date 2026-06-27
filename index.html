@@ -178,6 +178,7 @@
     .divider { display: flex; align-items: center; gap: 12px; color: var(--muted-2); font-size: 11px; font-weight: 800; margin: 16px 0; }
     .divider::before, .divider::after { content: ""; flex: 1; height: 1px; background: var(--border); }
     .auth-switch { text-align: center; margin-top: 14px; font-size: 13px; color: var(--muted); }
+    .link-btn{ background:none; border:none; padding:0; margin:0; font:inherit; font-weight:700; color:var(--accent,#10b981); cursor:pointer; text-decoration:underline; }
     .auth-switch button { background: 0; border: 0; color: var(--green); font-weight: 800; cursor: pointer; font-size: 13px; }
     .toast { position: absolute; left: 50%; bottom: calc(300px + var(--safe-bottom)); transform: translateX(-50%) translateY(20px); z-index: 90; opacity: 0; pointer-events: none; background: var(--text); color: var(--app-bg); border-radius: 999px; padding: 12px 16px; font-size: 13px; font-weight: 900; box-shadow: var(--shadow); transition: opacity .22s, transform .22s; white-space: nowrap; max-width: calc(100% - 28px); overflow: hidden; text-overflow: ellipsis; }
     .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
@@ -420,7 +421,7 @@
           <button class="close-btn" onclick="closeOverlay('consentOverlay')">&times;</button>
         </div>
         <div class="consent-body" style="overflow-y:auto;max-height:60vh;padding:0 4px;font-size:13px;line-height:1.55">
-          <p style="background:rgba(255,180,0,.15);border:1px solid rgba(255,180,0,.4);border-radius:10px;padding:10px;font-weight:700">RASCUNHO ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ este texto e um modelo inicial e precisa de revisao juridica antes da publicacao.</p>
+          <p style="background:rgba(255,180,0,.15);border:1px solid rgba(255,180,0,.4);border-radius:10px;padding:10px;font-weight:700">RASCUNHO — este texto e um modelo inicial e precisa de revisao juridica antes da publicacao.</p>
           <div class="section-label">1. Termos de Uso</div>
           <p>O BikeSafe e um aplicativo para registro de bicicletas, geracao de QR Code e alerta de furto. Ao criar uma conta voce concorda em usar o app de forma licita e fornecer informacoes verdadeiras sobre suas bicicletas. O servico e oferecido "no estado em que se encontra", sem garantia de recuperacao de bens furtados.</p>
           <div class="section-label">2. Politica de Privacidade e Dados Coletados</div>
@@ -1055,7 +1056,7 @@ try {
 boot();
   </script>
 <script type="module">
-  // === Login real (Google + e-mail/senha) Ã¢ÂÂ sobrescreve os handlers demo ===
+  // === Login real (Google + e-mail/senha) — sobrescreve os handlers demo ===
   import { loginGoogle, loginEmail, signupEmail, logout as svcLogout } from "./firebase-service.js";
   (function(){
     let loginMode = "login";
@@ -1067,20 +1068,20 @@ boot();
       if(t) t.textContent = isSignup ? "Criar conta" : "Entrar";
       if(s) s.textContent = isSignup ? "Cadastre-se para proteger suas bikes." : "Bem-vindo de volta.";
       if(b) b.textContent = isSignup ? "Cadastrar" : "Entrar";
-      if(sw) sw.textContent = isSignup ? "JÃÂ¡ tem conta? Entrar" : "NÃÂ£o tem conta? Cadastre-se";
+      if(sw) sw.innerHTML = isSignup ? 'Já tem conta? <button type="button" class="link-btn" onclick="toggleAuthMode()">Entrar</button>' : 'Não tem conta? <button type="button" class="link-btn" onclick="toggleAuthMode()">Cadastre-se</button>';
       if(nf) nf.style.display = isSignup ? "" : "none";
     }
     window.toggleAuthMode = function(){ loginMode = (loginMode==="login")?"signup":"login"; renderMode(); };
     function friendlyError(code){
-      const map={"auth/invalid-email":"E-mail invÃÂ¡lido.","auth/missing-password":"Digite a senha.","auth/weak-password":"Senha fraca: use ao menos 6 caracteres.","auth/email-already-in-use":"Este e-mail jÃÂ¡ estÃÂ¡ cadastrado. Tente entrar.","auth/invalid-credential":"E-mail ou senha incorretos.","auth/wrong-password":"Senha incorreta.","auth/user-not-found":"Conta nÃÂ£o encontrada. Cadastre-se."};
-      return map[code] || "NÃÂ£o foi possÃÂ­vel concluir. Tente novamente.";
+      const map={"auth/invalid-email":"E-mail inválido.","auth/missing-password":"Digite a senha.","auth/weak-password":"Senha fraca: use ao menos 6 caracteres.","auth/email-already-in-use":"Este e-mail já está cadastrado. Tente entrar.","auth/invalid-credential":"E-mail ou senha incorretos.","auth/wrong-password":"Senha incorreta.","auth/user-not-found":"Conta não encontrada. Cadastre-se."};
+      return map[code] || "Não foi possível concluir. Tente novamente.";
     }
     window.submitAuth = async function(ev){
       if(ev&&ev.preventDefault) ev.preventDefault();
       const email=($("authEmail")||{}).value||"";
       const pass=($("authPass")||{}).value||"";
       const consent=$("consentCheck");
-      if(loginMode==="signup" && consent && !consent.checked){ say("VocÃÂª precisa aceitar os termos e a polÃÂ­tica de privacidade."); return; }
+      if(loginMode==="signup" && consent && !consent.checked){ say("Você precisa aceitar os termos e a política de privacidade."); return; }
       try{
         if(loginMode==="signup"){ await signupEmail(email.trim(),pass); try{localStorage.setItem("bikesafe_consent","1");}catch(e){} say("Conta criada! Bem-vindo."); }
         else { await loginEmail(email.trim(),pass); say("Login efetuado."); }
@@ -1139,8 +1140,8 @@ boot();
       <h2>Verificar bike suspeita</h2>
     </div>
     <div style="padding:0 18px 18px;">
-      <p style="font-size:13px;color:var(--muted,#888);margin:0 0 10px;">Encontrou uma bike \u00e0 venda ou abandonada? Digite o n\u00famero de s\u00e9rie para conferir se a comunidade marcou como roubada.</p>
-      <input id="verifySerial" type="text" placeholder="N\u00famero de s\u00e9rie" style="width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border,#ddd);background:var(--chip,#f4f4f4);color:var(--text,#111);font-size:14px;margin-bottom:10px;">
+      <p style="font-size:13px;color:var(--muted,#888);margin:0 0 10px;">Encontrou uma bike à venda ou abandonada? Digite o número de série para conferir se a comunidade marcou como roubada.</p>
+      <input id="verifySerial" type="text" placeholder="Número de série" style="width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border,#ddd);background:var(--chip,#f4f4f4);color:var(--text,#111);font-size:14px;margin-bottom:10px;">
       <button class="report-suspect-btn" onclick="verifySuspectBike()"><i class="fi fi-bs-search"></i> Verificar agora</button>
       <div id="verifyResult" style="margin-top:14px;"></div>
     </div>
@@ -1154,14 +1155,14 @@ boot();
     var box = document.getElementById("verifyResult");
     if(!inp || !box) return;
     var q = norm(inp.value);
-    if(!q){ box.innerHTML = '<p style="color:var(--muted,#888);font-size:13px;">Digite um n\u00famero de s\u00e9rie.</p>'; return; }
+    if(!q){ box.innerHTML = '<p style="color:var(--muted,#888);font-size:13px;">Digite um número de série.</p>'; return; }
     var stolen = (window.state && state.stolenBikes) ? state.stolenBikes : [];
     var hit = stolen.find(function(b){ return norm(b.serial) === q || (b.serial && norm(b.serial).indexOf(q)>-1 && q.length>=4); });
     if(hit){
       box.innerHTML =
         '<div style="border:1px solid #d12b22;background:rgba(255,59,48,.08);border-radius:14px;padding:14px;">' +
           '<div style="display:flex;align-items:center;gap:8px;font-weight:800;color:#d12b22;font-size:15px;">' +
-            '<i class="fi fi-sr-seal-exclamation"></i> ATEN\u00c7\u00c3O: marcada como ROUBADA</div>' +
+            '<i class="fi fi-sr-seal-exclamation"></i> ATENÇÃO: marcada como ROUBADA</div>' +
           '<p style="margin:8px 0 0;font-size:13px;color:var(--text,#111);">' +
             (hit.brand? (hit.brand+" "):"") + (hit.model||"") + (hit.color? (" \u2022 "+hit.color):"") + '</p>' +
           '<button class="report-suspect-btn" style="margin-top:10px;border-color:#d12b22;color:#d12b22;" onclick="reportSightingFor(\''+(hit.id||"")+'\')">' +
@@ -1170,8 +1171,8 @@ boot();
     } else {
       box.innerHTML =
         '<div style="border:1px solid var(--border,#ddd);background:var(--chip,#f4f4f4);border-radius:14px;padding:14px;">' +
-          '<div style="font-weight:800;color:var(--text,#111);font-size:14px;">N\u00e3o consta como roubada</div>' +
-          '<p style="margin:6px 0 0;font-size:12px;color:var(--muted,#888);">Nenhum registro de roubo encontrado para esta s\u00e9rie na comunidade. Ainda assim, desconfie de pre\u00e7os muito baixos e pe\u00e7a nota fiscal.</p>' +
+          '<div style="font-weight:800;color:var(--text,#111);font-size:14px;">Não consta como roubada</div>' +
+          '<p style="margin:6px 0 0;font-size:12px;color:var(--muted,#888);">Nenhum registro de roubo encontrado para esta série na comunidade. Ainda assim, desconfie de preços muito baixos e peça nota fiscal.</p>' +
         '</div>';
     }
   };
