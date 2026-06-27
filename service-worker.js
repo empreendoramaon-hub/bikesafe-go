@@ -1,12 +1,9 @@
 // service-worker.js - BikeSafe Go PWA
-const CACHE = 'bikesafe-go-v10';
+const CACHE = 'bikesafe-go-v12';
 const ASSETS = [
   './',
   './index.html',
   './manifest.json',
-  './data-layer.js',
-  './firebase-service.js',
-  './firebase-config.js',
   './bikesafe-logo.svg',
   './install-app.svg'
 ];
@@ -20,7 +17,7 @@ self.addEventListener('install', event => {
 
 self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
+    caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k))))
   );
   self.clients.claim();
 });
@@ -30,18 +27,19 @@ self.addEventListener('fetch', event => {
   if (req.method !== 'GET') return;
 
   const url = new URL(req.url);
-  const isAppShell = url.origin === location.origin && (
+  const isAppCode = url.origin === location.origin && (
     req.mode === 'navigate' ||
     url.pathname.endsWith('/index.html') ||
     url.pathname.endsWith('/data-layer.js') ||
     url.pathname.endsWith('/firebase-service.js') ||
-    url.pathname.endsWith('/firebase-config.js')
+    url.pathname.endsWith('/firebase-config.js') ||
+    url.pathname.endsWith('/service-worker.js')
   );
 
-  // Network-first para HTML e JS do app, assim a Vercel publica correcao sem ficar presa no cache.
-  if (isAppShell) {
+  // Codigo do app sempre tenta rede primeiro. Isso evita o app ficar preso em JS antigo.
+  if (isAppCode) {
     event.respondWith(
-      fetch(req).then(res => {
+      fetch(req, { cache: 'no-store' }).then(res => {
         const copy = res.clone();
         caches.open(CACHE).then(c => c.put(req, copy)).catch(() => {});
         return res;
@@ -50,7 +48,6 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // Cache-first para imagens, manifest e demais recursos estaticos.
   event.respondWith(
     caches.match(req).then(cached => cached || fetch(req).then(res => {
       const copy = res.clone();
