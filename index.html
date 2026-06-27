@@ -283,7 +283,46 @@
 }
 .action-btn.app-action.danger svg,
 .action-btn.danger svg{ color:#fff !important; fill: currentColor; }
+
+/* ====== v6: uicons, top theme toggle, overlap fixes ====== */
+.float-action i.fi{ font-size:22px; line-height:1; display:inline-flex; }
+.float-action[title="Alertas"]{
+  width:52px; height:52px;
+  background:#111 !important; color:#fff !important;
+  border:1px solid #000 !important;
+  box-shadow:0 4px 12px rgba(0,0,0,.35) !important;
+}
+.float-action[title="Alertas"] i.fi{ font-size:24px; }
+#themeBtn{ display:none !important; }
+.mtbg-theme-toggle{
+  position:relative; display:inline-flex; align-items:center; gap:4px;
+  width:58px; height:30px; border-radius:999px; padding:0 6px;
+  background:var(--chip,#eee); border:1px solid var(--border,#ddd);
+  cursor:pointer; font-size:13px; line-height:1; color:var(--text,#111);
+  vertical-align:middle; margin:0 6px;
+}
+.mtbg-theme-toggle .mtbg-theme-thumb{
+  position:absolute; top:50%; left:4px; transform:translateY(-50%);
+  width:22px; height:22px; border-radius:50%;
+  background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.3);
+  transition:left .25s ease;
+}
+[data-theme="dark"] .mtbg-theme-toggle .mtbg-theme-thumb{ left:calc(100% - 26px); }
+[data-theme="dark"] .mtbg-theme-toggle{ background:#2a2a2a; border-color:#444; color:#f2f2f2; }
+.status-strip{ margin-top:6px; }
+.report-suspect-btn{
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  width:100%; margin:10px 0 0; padding:12px 14px;
+  border-radius:14px; border:1px solid var(--border,#ddd);
+  background:var(--chip,#f4f4f4); color:var(--text,#111);
+  font-weight:800; font-size:13px; cursor:pointer;
+}
+.report-suspect-btn i.fi{ font-size:18px; }
 </style>
+  <link rel="stylesheet" href="https://cdn-uicons.flaticon.com/uicons-regular-straight/css/uicons-regular-straight.css">
+  <link rel="stylesheet" href="https://cdn-uicons.flaticon.com/uicons-solid-straight/css/uicons-solid-straight.css">
+  <link rel="stylesheet" href="https://cdn-uicons.flaticon.com/uicons-solid-rounded/css/uicons-solid-rounded.css">
+  <link rel="stylesheet" href="https://cdn-uicons.flaticon.com/uicons-bold-straight/css/uicons-bold-straight.css">
 </head>
 <body>
   <main class="app" id="app">
@@ -291,7 +330,7 @@
     <section class="top-layer">
       <div class="search-row">
         <label class="search-box" aria-label="Buscar">
-          <span>&#128269;</span>
+          <span><i class="fi fi-bs-search"></i></span>
           <input id="searchInput" type="search" placeholder="Buscar bike, QR Code, serie ou area" />
         </label>
         <button class="round-btn" onclick="openProfile()" title="Perfil">&#128100;</button>
@@ -300,9 +339,9 @@
     </section>
     <div class="status-strip" id="statusStrip"></div>
     <div class="map-actions">
-      <button class="float-action" onclick="centerUser()" title="Minha localizacao">&#128205;</button>
+      <button class="float-action" onclick="centerUser()" title="Minha localizacao"><i class="fi fi-ss-marker"></i></button>
       <button class="float-action" onclick="toggleTheme()" title="Tema claro/escuro" id="themeBtn">â</button>
-      <button class="float-action" onclick="openHuntCenter()" title="Alertas">&#128680;</button>
+      <button class="float-action" onclick="openHuntCenter()" title="Alertas"><i class="fi fi-sr-seal-exclamation"></i></button>
     </div>
     <section class="sheet" id="sheet">
       <button class="sheet-grabber" aria-label="Expandir painel" onclick="toggleSheet()"></button>
@@ -329,7 +368,7 @@
           <button class="tab-btn nav-link active" id="tabGarage" onclick="switchTab('garage')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg><span>Garagem</span></button>
           <button class="tab-btn nav-link" id="tabHunt" onclick="switchTab('hunt')"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg><span>Procurando</span></button>
           <button class="tab-btn nav-link" id="tabFeed" onclick="switchTab('feed')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg><span>Comunidade</span></button>
-          <button class="tab-btn nav-link" id="tabDb" onclick="switchTab('db')"><svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M3 5v14a9 3 0 0 0 18 0V5"></path><path d="M3 12a9 3 0 0 0 18 0"></path></svg><span>Banco</span></button>
+          
         </div>
         <div id="tabContent"></div>
       </div>
@@ -365,7 +404,7 @@
           <button type="submit" class="action-btn primary wide" id="authSubmitBtn">Entrar</button>
         </form>
         <div class="divider">ou</div>
-        <button class="action-btn secondary wide auth-google" onclick="doGoogleLogin()">&#128269; Entrar com Google</button>
+        <button class="action-btn secondary wide auth-google" onclick="doGoogleLogin()"><i class="fi fi-bs-search"></i> Entrar com Google</button>
         <div class="auth-switch" id="authSwitch">
           Nao tem conta? <button type="button" onclick="toggleAuthMode()">Criar conta</button>
         </div>
@@ -415,7 +454,7 @@
             <div class="upload-row">
               <label class="upload-slot" id="slot0">&#128247;<br>Principal<input type="file" accept="image/*" onchange="previewPhoto(event, 0)"></label>
               <label class="upload-slot" id="slot1">&#128690;<br>Lateral<input type="file" accept="image/*" onchange="previewPhoto(event, 1)"></label>
-              <label class="upload-slot" id="slot2">&#128269;<br>Detalhe<input type="file" accept="image/*" onchange="previewPhoto(event, 2)"></label>
+              <label class="upload-slot" id="slot2"><i class="fi fi-bs-search"></i><br>Detalhe<input type="file" accept="image/*" onchange="previewPhoto(event, 2)"></label>
             </div>
           </div>
           <div class="field">
@@ -456,7 +495,7 @@
     <div class="overlay" id="alertOverlay">
       <div class="modal">
         <div class="sheet-grabber"></div>
-        <div class="modal-head"><h2>Modo Caca</h2><button class="close-btn" onclick="closeOverlay('alertOverlay')">&#10005;</button></div>
+        <div class="modal-head"><h2>Modo Caça</h2><button class="close-btn" onclick="closeOverlay('alertOverlay')">&#10005;</button></div>
         <div id="alertContent"></div>
       </div>
     </div>
@@ -708,7 +747,7 @@
         '<div class="status-pill"><span>\uD83D\uDEE1\uFE0F</span><strong>' + safe + '</strong> protegidas</div>' +
         '<div class="status-pill red"><span>\uD83D\uDEA8</span><strong>' + stolen + '</strong> alertas</div>' +
         '<div class="status-pill"><span>\uD83C\uDFEA</span><strong>' + shops.length + '</strong> parceiros</div>' +
-        '<div class="status-pill"><span>' + (cloud ? '\u2601\uFE0F' : '\uD83D\uDCBE') + '</span><strong>' + (cloud ? 'Nuvem' : 'Demo') + '</strong></div>';
+        '<div class="status-pill"><span>' + (cloud ? '\u2601\uFE0F' : '\uD83D\uDCBE') + '</span><strong>' + ('Nuvem') + '</strong></div>';
     }
     function renderMainBike(bike) {
       const el = document.getElementById('mainBikeCard');
@@ -874,7 +913,7 @@
       state.selectedBikeId = id;
       render();
       renderHuntCenter(id);
-      toast('Alerta ativado. Modo Caca ligado.');
+      toast('Alerta ativado. Modo Caça ligado.');
     };
     window.openHuntCenter = function () { const stolen = state.bikes.find(b => b.status === 'stolen') || getSelectedBike(); if (!stolen) return toast('Nenhuma bike cadastrada', true); renderHuntCenter(stolen.id); openOverlay('alertOverlay'); };
     function renderHuntCenter(id) {
@@ -882,7 +921,7 @@
       if (!bike) return;
       const boText = generateBOText(bike);
       document.getElementById('alertContent').innerHTML =
-        '<div class="hunt-panel"><h3>' + (bike.status === 'stolen' ? '\uD83D\uDEA8 Modo Caca ativo' : '\uD83D\uDEE1\uFE0F Central de protecao') + '</h3><p>' + (bike.status === 'stolen' ? 'A bike esta marcada como furtada. Compartilhe o alerta e mantenha o B.O. pronto.' : 'Esta bike esta segura. Se algo acontecer, ative o alerta em dois toques.') + '</p></div>' +
+        '<div class="hunt-panel"><h3>' + (bike.status === 'stolen' ? '\uD83D\uDEA8 Modo Caça ativo' : '\uD83D\uDEE1\uFE0F Central de protecao') + '</h3><p>' + (bike.status === 'stolen' ? 'A bike esta marcada como furtada. Compartilhe o alerta e mantenha o B.O. pronto.' : 'Esta bike esta segura. Se algo acontecer, ative o alerta em dois toques.') + '</p></div>' +
         '<div class="info-stack">' + infoRow('Bike', bike.brand + ' ' + bike.model) + infoRow('Cor', bike.color) + infoRow('Serie', bike.serial || 'Nao informada') + infoRow('Status', bike.status === 'stolen' ? 'Furtada / em alerta' : 'Segura') + infoRow('Horario do alerta', bike.stolenAt ? new Date(bike.stolenAt).toLocaleString('pt-BR') : 'Nao acionado') + '</div>' +
         '<div class="section-label">Resumo para B.O. / Delegacia Virtual</div><div class="feed-card"><p id="boText">' + esc(boText) + '</p></div>' +
         '<div class="submit-row"><button class="action-btn secondary" onclick="copyBO(\'' + bike.id + '\')">Copiar B.O.</button><button class="action-btn primary" onclick="shareWhats(\'' + bike.id + '\')">Compartilhar</button></div>' +
@@ -953,7 +992,7 @@
     window.openProfile = function () {
       const u = currentUser;
       document.getElementById('profileContent').innerHTML =
-        '<div class="feed-card"><h3>\uD83D\uDC64 ' + (u ? esc(u.name) : 'Visitante') + '</h3><p>' + (u ? esc(u.email) : 'Voce ainda nao entrou.') + ' \u2022 Modo: <b>' + (cloud ? 'Nuvem (Firebase)' : 'Demo (local)') + '</b></p></div>' +
+        '<div class="feed-card"><h3>\uD83D\uDC64 ' + (u ? esc(u.name) : 'Visitante') + '</h3><p>' + (u ? esc(u.email) : 'Voce ainda nao entrou.') + ' \u2022 Modo: <b>' + ('Nuvem') + '</b></p></div>' +
         '<div class="submit-row"><button class="action-btn secondary" onclick="toggleTheme()">\uD83C\uDF13 Trocar tema</button><button class="action-btn secondary" onclick="installApp()">\uD83D\uDCF1 Instalar app</button></div>' +
         (u ? '<div class="submit-row single"><button class="action-btn danger" onclick="logout()">Sair da conta</button></div>' : '<div class="submit-row single"><button class="action-btn primary" onclick="closeOverlay(\'profileOverlay\'); openAuthPublic()">Entrar / criar conta</button></div>') +
         '<div class="note">Para ativar login e banco de dados reais (compartilhados entre dispositivos), adicione o arquivo firebase-config.js com as chaves do seu projeto Firebase. Sem ele, o app roda em modo demonstracao local.</div>';
@@ -1051,6 +1090,44 @@ boot();
     window.__onAuthState = function(user){ const ov=$("authOverlay"); if(!user){ if(ov) ov.classList.add("open","center"); renderMode(); } else { if(ov) ov.classList.remove("open"); } };
     renderMode();
   })();
+</script>
+
+<script>
+(function(){
+  function buildThemeToggle(){
+    if(document.getElementById("mtbg-theme-toggle")) return;
+    var prof = Array.prototype.find.call(document.querySelectorAll("button"), function(b){
+      return /openProfile/.test(b.getAttribute("onclick")||"");
+    });
+    if(!prof || !prof.parentNode) return;
+    var btn = document.createElement("button");
+    btn.id = "mtbg-theme-toggle"; btn.type = "button"; btn.className = "mtbg-theme-toggle";
+    btn.setAttribute("aria-label","Switch color theme"); btn.setAttribute("title","Trocar tema");
+    btn.innerHTML = "<span>\u2600</span><span class=\"mtbg-theme-thumb\"></span><span>\u263E</span>";
+    btn.addEventListener("click", function(){
+      try{ if(typeof toggleTheme==="function"){ toggleTheme(); } else {
+        var d=document.documentElement; var cur=d.getAttribute("data-theme")==="dark"?"light":"dark";
+        d.setAttribute("data-theme",cur); try{localStorage.setItem("bikesafe_theme",cur);}catch(e){}
+      } }catch(e){}
+    });
+    prof.parentNode.insertBefore(btn, prof);
+  }
+  function addReportSuspect(){
+    if(document.getElementById("reportSuspectBtn")) return;
+    var host = document.querySelector("#tab-search, #pane-search, .tab-pane, .search-pane");
+    var b = document.createElement("button");
+    b.id = "reportSuspectBtn"; b.type = "button"; b.className = "report-suspect-btn";
+    b.innerHTML = "<i class=\"fi fi-sr-seal-exclamation\"></i> Reportar bike suspeita";
+    b.addEventListener("click", function(){
+      try{ if(typeof openReportSighting==="function"){ openReportSighting(); return; } }catch(e){}
+      try{ if(typeof openHuntCenter==="function"){ openHuntCenter(); return; } }catch(e){}
+    });
+    if(host){ host.appendChild(b); }
+  }
+  function init(){ buildThemeToggle(); addReportSuspect(); }
+  if(document.readyState!=="loading"){ setTimeout(init,300); }
+  else document.addEventListener("DOMContentLoaded", function(){ setTimeout(init,300); });
+})();
 </script>
 </body>
 </html>
