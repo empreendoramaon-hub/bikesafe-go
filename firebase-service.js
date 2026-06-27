@@ -1,6 +1,7 @@
 // firebase-service.js
 import { auth, db } from "./firebase-config.js";
 import {
+  deleteUser,
   signInAnonymously, signInWithPopup, GoogleAuthProvider, onAuthStateChanged,
   signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -79,4 +80,14 @@ export function addSighting(uid, text, type = "alert") {
   return addDoc(collection(db, "sightings"), {
     authorId: uid, text, type, createdAt: serverTimestamp()
   });
+}
+
+export async function deleteAccount() {
+  const u = auth.currentUser;
+  if (!u) return false;
+  await deleteUser(u);
+  return true;
+}
+export function isAnonymousUser() {
+  return !!(auth.currentUser && auth.currentUser.isAnonymous);
 }
